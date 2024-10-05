@@ -3,7 +3,7 @@ from _edit import Edit_Row
 
 class Delete_rows(Base_Class):
     
-    def delete_selected_rows(self) -> None:
+    def apply_delete_widget(self) -> None:
         sr = Edit_Row.rows_selected(self)
         rows = self.init_table.model().init_data.iloc[sr, :]
         ids = self.settings_dict[self.cur_name]['df'].query('`Номер` == @rows["Номер"].to_list()').index.to_list()

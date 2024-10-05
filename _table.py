@@ -3,6 +3,7 @@ from _base import Base_Class, pandasModel
 import os
 import pandas as pd
 
+from PyQt6.QtCore import QRect
 
 class Table_Methods(Base_Class):
     
@@ -16,7 +17,7 @@ class Table_Methods(Base_Class):
     def show_table(self, name: str) -> None:
         self.cur_name = name
         if name == 'empty':
-            self.stackedWidget.setCurrentIndex(1)
+            self.stackedWidget.setCurrentWidget(self.empty_page)
             return
         if name in ['reg', 'grnti']:
             self.add_widget.setHidden(True)
@@ -32,11 +33,14 @@ class Table_Methods(Base_Class):
             self.filter_widget.setHidden(True)
             self.ramka1.setHidden(False)
             self.ramka2.setHidden(False)
-        self.init_table.setModel(pandasModel(self.settings_dict[name]['df']))
-        self.init_table.setSelectionMode(self.settings_dict[name]['mode'])
-        self.init_table.setSelectionBehavior(self.settings_dict[name]['behave'])
-        self.init_tablename.setText(self.settings_dict[name]['label'])
+        df_ = self.settings_dict[name]
+        self.init_table.setModel(pandasModel(df_['df']))
+        self.init_table.setSelectionMode(df_['mode'])
+        self.init_table.setSelectionBehavior(df_['behave'])
+        self.init_tablename.setText(df_['label'])
         self.init_table.resizeColumnsToContents()
+        # total_width = sum(self.init_table.columnWidth(i) for i in range(len(df_['df'].columns)))
+        # if total_width < 1000: self.init_table.setGeometry(QRect(25, 80, total_width+21, 651))
         self.stackedWidget.setCurrentIndex(0)
     
     

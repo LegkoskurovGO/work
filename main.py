@@ -4,6 +4,7 @@ from _base import Base_Class, Ui_Dialog2
 from _table import Table_Methods
 from _filter import Filter_table
 from _delete import Delete_rows
+from _experts import Experts
 
 from PyQt6.QtWidgets import QApplication
 
@@ -39,7 +40,7 @@ pd.set_option('future.no_silent_downcasting', True)
 # - формирование документов: таблица со списком сформированной поименованной экспертной группы,
 # содержащей столбцы: порядковый номер, фамилия И.О., регион, город, код ГРНТИ; карточка эксперта.
 
-class Ui_MainWindow2(Edit_Row, Add_Row, Table_Methods, Filter_table, Delete_rows):
+class Ui_MainWindow2(Edit_Row, Add_Row, Table_Methods, Filter_table, Delete_rows, Experts):
 
     def __init__(self):
         # Загружаем данные и всякие переменные
@@ -55,7 +56,7 @@ class Ui_MainWindow2(Edit_Row, Add_Row, Table_Methods, Filter_table, Delete_rows
         self.keyboard_connect()
         
         # Заполнить поля в Добавить
-        self.fill_add_lineEdit()
+        self.fill_add_widget()
         
         # Заполнить поля в Фильтр
         self.fill_filter_lineEdit()
@@ -68,12 +69,16 @@ class Ui_MainWindow2(Edit_Row, Add_Row, Table_Methods, Filter_table, Delete_rows
         
     def open_dialog(self, string):
         if string == 'delete' and len(Edit_Row.rows_selected(self)) == 0: return
+        if string == 'add':
+            if not self.checkers_add_widget():
+                return
         dialog = Ui_Dialog2(string)
         result = dialog.exec()  # Запускаем диалоговое окно и ожидаем результата
         func = {
             'add': self.apply_add_widget,
             'edit': self.apply_edit_widget,
-            'delete': self.delete_selected_rows
+            'delete': self.apply_delete_widget,
+            'group': self.save_group_widget
         }
         match result:
             case 1: func[string]()

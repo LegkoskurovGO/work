@@ -5,9 +5,7 @@ from PyQt6.QtCore import QRegularExpression
 from PyQt6.QtGui import QRegularExpressionValidator
 
 import pandas as pd
-from pandas.api.types import is_datetime64_any_dtype
-
-
+import re
 
 class Edit_Row(Base_Class):
     
@@ -56,8 +54,10 @@ class Edit_Row(Base_Class):
             old_row['Номер'],
             self.edit_name_lineEdit.text(),
             self.edit_reg_comboBox.currentText(),
+            self.dict_reg.get(self.edit_city_lineEdit.text(), ''), # self.edit_region_comboBox
             self.edit_city_lineEdit.text(),
             self.edit_grnti_lineEdit.text(),
+            ', '.join(dict.fromkeys([self.dict_grnti.get(int(n.split(r'.')[0]), '') for n in self.edit_grnti_lineEdit.text().split(r', ')])), 
             self.edit_keywords_lineEdit.text(),
             old_row['Участие'],
             old_row['Дата добавления']
@@ -81,7 +81,10 @@ class Edit_Row(Base_Class):
     
     
     def varify_edding_row(self, new_row, old_row) -> bool:
-        return not (~new_row.drop(['Ключевые слова', 'Участие']).astype(bool)).sum()
+        if not (bool(re.match(r'^[А-Яа-я\s\.]+$', new_row['ФИО'])) and bool(re.match(r'^[А-Яа-я\s\.]+$', new_row['Город']))):
+            return False
+        query_string = r'`ФИО` == @new_row["ФИО"] and `Округ` == @new_row["Округ"] and `Город` == @new_row["Город"]'
+        return not (~new_row.drop(['Ключевые слова', 'Участие', "Регион", "Расшифровка"]).astype(bool)).sum() and self.settings_dict[self.cur_name]['df'].query(query_string).empty
         edding_row = (
             self.edit_name_lineEdit.text(),
             self.edit_reg_comboBox.currentText(),

@@ -1,30 +1,42 @@
-from _base import Base_Class, pandasModel
+from _base import Base_Class, pandasModel, Ui_Dialog2
 from _edit import Edit_Row
+
+from PyQt6.QtCore import QSettings
 
 import os
 import pandas as pd
 
 class Experts(Base_Class):
     
-    def save_selected_rows(self):
+    def save_group_widget(self) -> None:
+        settings = QSettings("MyCompany", "MyApp")
+        file_name = settings.value("file_name") # Читаем значение
+
+        self.save_selected_rows(file_name)
+    
+    
+    def save_selected_rows(self, name):
         sr = Edit_Row.rows_selected(self)
-        rows = self.init_table.model().init_data.iloc[sr, :].reset_index(drop=True)
+        rows = self.init_table.model().init_data.iloc[sr, :]
         
-        name, flag = self.approve_save()
-        
-        if flag:
-            rows.to_csv(f'{name}.csv')
+        if self.approve_save(name):
+            self.save_dataframe_with_names(rows, name)
+    
+    
+    def approve_save(self, name) -> bool:
+        return True
+        # return not os.path.isfile(os.path.join('.', 'groups', f'{name}.csv'))
     
     
     def load_groups(self, name) -> pd.DataFrame:
-        params = {'dtype': { 'kod': 'int16', 'take_part': 'int8'}, 'parse_dates': [7], 'date_format': '%d-%b-%y'}
+        params = {'dtype': { 'kod': 'int16', 'take_part': 'int8'}, 'parse_dates': [9], 'date_format': '%d-%b-%y'}
         df = pd.read_csv(os.path.join('.', 'groups', f'{name}.csv'), **params)
         return df
     
     def list_of_groups(self):
         pass
 
-    def save_dataframe_with_names(df, group_name, file_path="names.txt"):
+    def save_dataframe_with_names(df: pd.DataFrame, group_name: str, file_path="names.txt"):
         # Определение следующего свободного номера файла
         file_numbers = []
         if os.path.exists(file_path):
@@ -35,17 +47,17 @@ class Experts(Base_Class):
 
         # Формирование имени файла
         file_name = f"group{next_number}.csv"
-        
+        print(f'{file_name=}')
         # Проверка на дублирование русского названия
         if os.path.exists(file_path):
             with open(file_path, "r", encoding="utf-8") as f:
                 for line in f:
                     if group_name == line.split(",")[1].strip():
-                        raise ValueError(f"Файл с таким русским названием ({group_name}) уже существует!")
+                        print(f"Файл с таким русским названием ({group_name}) уже существует!")
                         # return self.warning('Такое имя уже зарезервировано')
 
         # Сохранение DataFrame в файл CSV
-        df.to_csv(file_name, index=False, encoding="utf-8")
+        df.to_csv(file_name, index=False, encoding="utf-8", date_format='%d-%b-%y')
 
         # Запись имени файла и его русского названия в текстовый документ
         with open(file_path, "a", encoding="utf-8") as f:
@@ -53,10 +65,6 @@ class Experts(Base_Class):
 
     
         
-    def approve_save(self) -> tuple[str, bool]:
-        return self.get_name_file(), True
-
-    def get_name_file(self) -> str:
-        return 'name'
+    
     
 # pd.DataFrame.to_csv(f'{name}.csv')
