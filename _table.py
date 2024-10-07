@@ -12,6 +12,18 @@ class Table_Methods(Base_Class):
         self.flag_sort: bool = True
         self.col_sort: int = 0
         self.init_table.horizontalHeader().sectionClicked.connect(self.sort_table)
+        
+    #     # Настройка выделения строк
+    #     self.init_table.selectionModel().selectionChanged.connect(self.on_selection_changed)
+
+    # def on_selection_changed(self, selected, deselected):
+    #     """Срабатывает при изменении выделения строк"""
+    #     if len(selected.indexes()) > 0:
+    #         # Выделение нескольких строк уже обрабатывается SelectionMode.ExtendedSelection
+    #         pass
+    #     else:
+    #         self.init_table.selectionModel().clearSelection()
+
     
     
     def show_table(self, name: str) -> None:
@@ -44,24 +56,12 @@ class Table_Methods(Base_Class):
         self.stackedWidget.setCurrentIndex(0)
     
     
-    def save_table(self, name: str, df: pd.DataFrame) -> None:
-        if not os.path.isdir(os.path.join('.', 'pickles')):
-            os.mkdir(os.path.join('.', 'pickles'))
-            
-        if not os.path.isfile(pkl_path := os.path.join('.', 'pickles', f'{name}.pkl')):
-            df.to_pickle(pkl_path)
-        else:
-            i = 1
-            while os.path.isfile(pkl_path := os.path.join('.', 'pickles', f'{name}_{i}.pkl')):
-                i += 1
-            df.to_pickle(pkl_path)
     
-    
-    def read_table(self, pkl_path: str) -> tuple[pd.DataFrame|None, bool]:
-        if os.path.isfile(pkl_path):
-            return pd.read_pickle(pkl_path), True
-        else:
-            return None, False 
+    # def read_table(self, pkl_path: str) -> tuple[pd.DataFrame|None, bool]:
+    #     if os.path.isfile(pkl_path):
+    #         return pd.read_pickle(pkl_path), True
+    #     else:
+    #         return None, False 
     
     
     def sort_table(self, col: int) -> None:

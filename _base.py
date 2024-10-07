@@ -6,7 +6,7 @@ from PyQt6.QtWidgets import QMainWindow, QDialog, QTableView, QWidget, QLineEdit
 from PyQt6.QtCore import QAbstractTableModel, Qt, QRect, QSettings
 from PyQt6.QtGui import QShortcut, QKeySequence
 
-import os
+import os, shutil
 import pandas as pd
 from pandas.api.types import is_datetime64_any_dtype
 
@@ -51,13 +51,14 @@ class Ui_Dialog2(QDialog, Ui_Dialog):
         self.confirm_button.setShortcut('Ctrl+1')
         self.cancel_button.setShortcut('Ctrl+2')
         
-        # TODO: Кастыль
-        self.lfile_name = QLineEdit(self)
-        self.lfile_name.setGeometry(QRect(40, 61, 441, 31))
-        self.lfile_name.setObjectName("lfile_name")
-        
-        # Подключаем сигнал rejected к слоту
-        self.accepted.connect(self.on_close)
+        if string == 'group':
+            # TODO: Кастыль
+            self.lfile_name = QLineEdit(self)
+            self.lfile_name.setGeometry(QRect(40, 61, 441, 31))
+            self.lfile_name.setObjectName("lfile_name")
+            
+            # Подключаем сигнал rejected к слоту
+            self.accepted.connect(self.on_close)
 
     def on_close(self):
         # Читаем значения из объектов диалога
@@ -84,6 +85,7 @@ class Base_Class(QMainWindow, Ui_MainWindow):
     
     
     def app_exit(self) -> None: 
+        # shutil.rmtree(os.path.realpath(os.path.join('.', 'groups')))
         exit()
     def start_position(self) -> None:
         
@@ -107,13 +109,22 @@ class Base_Class(QMainWindow, Ui_MainWindow):
         # Загружаем данные
         params = {'dtype': { 'Номер': 'int16', 'Участие': 'int8'}, 'parse_dates': [7], 'date_format': '%d-%b-%y'}
         
-        df_ntp = pd.read_csv(os.path.join('.', dir_name, 'Expert.csv'), **params, delimiter=';')
+        df_ntp = pd.read_csv(os.path.join('.', dir_name, 'Expert.csv'), **params)
         df_reg = pd.read_csv(os.path.join('.', dir_name, 'Reg_obl_city.csv'), delimiter=';')
-        df_grnti = pd.read_csv(os.path.join('.', dir_name, 'grntirub.csv'))
+        # df_grnti = pd.read_csv(os.path.join('.', dir_name, 'grntirub.csv'))
+        df_grnti = pd.read_csv(os.path.join('.', dir_name, 'grnti-latest.csv'), header=0, usecols=[0,1], names=['Код', 'Расшифровка']).drop_duplicates(keep='first')
+        
+        # Title case GRNTI
+        # df_grnti['Расшифровка'] = df_grnti['Расшифровка'].str.capitalize()
         
         # Расшифровка
-        self.dict_grnti = {int(k):v for k,v in zip(df_grnti['Код'].tolist(), df_grnti['Расшифровка'].tolist())}
-        df_ntp['Расшифровка'] = df_ntp['ГРНТИ'].str.split(r', ').map(lambda num: ', '.join(dict.fromkeys([self.dict_grnti.get(int(n.split(r'.')[0]), '') for n in num])))
+        dtypes_grnti = {'level_0_code': str, 'level_1_code': str, 'level_2_code': str, 'level_0_title': str, 'level_1_title': str, 'level_2_title': str}
+        df_grnti_all = pd.read_csv(os.path.join('.', dir_name, 'grnti-latest.csv'), dtype=dtypes_grnti)
+        dict1 = {k:v for k,v in zip(df_grnti_all.level_0_code.tolist(), df_grnti_all.level_0_title.tolist()) if k != ''}
+        dict2 = {k:v for k,v in zip(df_grnti_all.level_1_code.tolist(), df_grnti_all.level_1_title.tolist()) if k != ''}
+        dict3 = {k:v for k,v in zip(df_grnti_all.level_2_code.tolist(), df_grnti_all.level_2_title.tolist()) if k != ''}
+        self.dict_grnti = dict1 | dict2 | dict3
+        df_ntp['Расшифровка'] = df_ntp['ГРНТИ'].str.split(r', ').map(lambda num: ', '.join(dict.fromkeys([a for n in num if (a := self.dict_grnti.get(n, ''))])))
         # Регион
         # TODO: Кастыль
         self.dict_reg = {k:v for k,v in zip(df_reg['Город'].tolist(), df_reg['Регион'].tolist())} 
@@ -127,26 +138,27 @@ class Base_Class(QMainWindow, Ui_MainWindow):
     
     
     def btn_connect(self) -> None:
+        # Меню
         self.ntp_show.triggered.connect(lambda: self.show_table('ntp'))
         self.reg_show.triggered.connect(lambda: self.show_table('reg'))
         self.grnti_show.triggered.connect(lambda: self.show_table('grnti'))
         self.close_button.clicked.connect(lambda: self.show_table('empty'))
-        
+        # Фильтр
         self.filter_button.clicked.connect(lambda: self.show_filter_widget(False))
         self.filter_close_button.clicked.connect(lambda: self.show_filter_widget(True))
         self.filter_apply_button.clicked.connect(self.apply_filter_widget)
         self.filter_reset_button.clicked.connect(self.reset_filter_widget)
-        
+        # Добавить
         self.add_button.clicked.connect(lambda: self.show_add_widget(False))
         self.addexpert_close_button_.clicked.connect(lambda: self.show_add_widget(True))
         self.addexpert_apply_button.clicked.connect(lambda: self.open_dialog('add'))
-        
+        # Редактировать
         self.edit_button.clicked.connect(lambda: self.show_edit_widget(False))
         self.edit_close_button.clicked.connect(lambda: self.show_edit_widget(True))
         self.edit_apply_button.clicked.connect(lambda: self.open_dialog('edit'))
-        
+        # Удалить
         self.delete_button.clicked.connect(lambda: self.open_dialog('delete'))
-        
+        # Добавить в экспертную группу
         self.add_expert_button.clicked.connect(lambda: self.open_dialog('group'))
     
     
@@ -156,9 +168,9 @@ class Base_Class(QMainWindow, Ui_MainWindow):
         self.reg_show.setShortcut('Ctrl+2')
         self.grnti_show.setShortcut('Ctrl+3')
         self.close_button.setShortcut('Ctrl+w')
-        self.filter_close_button.setShortcut('Ctrl+v')
-        self.addexpert_close_button_.setShortcut('Ctrl+v')
-        self.edit_close_button.setShortcut('Ctrl+v')
+        self.filter_close_button.setShortcut('escape')
+        self.addexpert_close_button_.setShortcut('escape')
+        self.edit_close_button.setShortcut('escape')
         QShortcut(QKeySequence('Ctrl+q'), self).activated.connect(self.app_exit)
         
     
@@ -167,7 +179,8 @@ class Base_Class(QMainWindow, Ui_MainWindow):
         return  {
             'ntp': {
                 'df': self.df_ntp.copy(),
-                'mode': QTableView.SelectionMode.MultiSelection,
+                # 'mode': QTableView.SelectionMode.MultiSelection,
+                'mode': QTableView.SelectionMode.ExtendedSelection,
                 'behave': QTableView.SelectionBehavior.SelectRows,
                 'label': 'Эксперты НТП'
             },
@@ -209,7 +222,9 @@ class Base_Class(QMainWindow, Ui_MainWindow):
     #     df_ntp.columns = ['Номер', 'ФИО', 'Округ', 'Город', 'ГРНТИ', 'Ключевые слова', 'Участие', 'Дата добавления']
     #     df_reg.columns = ['Округ', 'Регион', 'Город']
     #     df_grnti.columns = ['Код', 'Расшифровка']
-        
+
+          # df_ntp['ГРНТИ'] = df_ntp['ГРНТИ'].str.split(r', ').map(lambda x: ', '.join(sorted(x)))
+          
     #     # Меняем индексацию по первичному ключу Номер
     #     # df_ntp = df_ntp.set_index('Номер')
         

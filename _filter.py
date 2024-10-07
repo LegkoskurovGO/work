@@ -11,18 +11,18 @@ class Filter_table(Base_Class):
         
         # Раздел Фильтр:
         validator_grnti = QRegularExpressionValidator()
-        validator_grnti.setRegularExpression(QRegularExpression(r'^\d{2}\.\d{2}$'))
+        validator_grnti.setRegularExpression(QRegularExpression(r'^\d{1,2}(\.\d{2}(\.\d{2})?)?(((\,|\;| ){1} *){1}\d{1,2}(\.\d{2}(\.\d{2})?)?)?$'))
         
         a = self.filter_reg_comboBox.currentText()
-        self.filter_name_lineEdit.setPlaceholderText('Введите ФИО эксперта')
-        self.filter_region_lineEdit.setPlaceholderText('Введите регион эксперта')
+        self.filter_name_lineEdit.setPlaceholderText('Введите ФИО эксперта:')
+        self.filter_region_lineEdit.setPlaceholderText('Введите регион эксперта:')
         self.filter_reg_comboBox.clear()
         self.filter_reg_comboBox.addItems([''] + sorted(self.df_ntp['Округ'].unique()))
         self.filter_reg_comboBox.setCurrentText(a)
         self.filter_grnti_lineEdit.setValidator(validator_grnti)
-        self.filter_city_lineEdit.setPlaceholderText('Введите город эксперта')
-        self.filter_grnti_lineEdit.setPlaceholderText('Введите ГРНТИ в формате:  00.00')
-        self.filter_keywords_lineEdit.setPlaceholderText('Введите ключевые слова')
+        self.filter_city_lineEdit.setPlaceholderText('Введите город эксперта:')
+        self.filter_grnti_lineEdit.setPlaceholderText('Введите коды ГРНТИ через запятую:')
+        self.filter_keywords_lineEdit.setPlaceholderText('Введите ключевые слова через запятую:')
         
     
     def show_filter_widget(self, hide: bool) -> None: 
@@ -35,11 +35,18 @@ class Filter_table(Base_Class):
         for filter_, col_ in zip(filters, cols):
             if filter_ != '':
                 if len(filter_string) > 1: filter_string += ' and '
-                if col_ != 'ГРНТИ':
+                if col_ != 'ГРНТИ' and col_ != 'Ключевые слова':
                     filter_string += f'{col_}.str.contains("{filter_}")'
+                elif col_ == 'Ключевые слова':
+                    filter_ = filter_.split(r'((\,|\;| ){1} *){1}')
+                    for i in filter_:
+                        filter_string += f'`{col_}`.str.contains("{i}", na=False, case=False)'
                 else:
-                    if len(filter_) == 1: filter_ = '0' + filter_
-                    filter_string += f'`{col_}`.str.contains(r"^({filter_})| ({filter_})")'
+                    filter_ = filter_.split(r'((\,|\;| ){1} *){1}')
+                    for i in filter_:
+                        if len(i.split(r'.')[0]) == 1: i = '0' + i
+                        filter_string += f'`{col_}`.str.contains(r"^({i}|, {i})")'
+                        
         return filter_string
     
     

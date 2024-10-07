@@ -27,7 +27,7 @@ pd.set_option('future.no_silent_downcasting', True)
 # и/или коду ГРНТИ
 # и/или ключевым словам области интересов;
 # фиксация отобранного подмножества в поименованную экспертную группу;
-
+# Done
 # - просмотр записей выбранной группы кандидатов на включение в состав экспертной группы
 # с возможностью простановки/снятия отметок о принятии решения о включении кандидата в экспертную группу;
 # фиксация результата в экспертной группе;
@@ -69,9 +69,7 @@ class Ui_MainWindow2(Edit_Row, Add_Row, Table_Methods, Filter_table, Delete_rows
         
     def open_dialog(self, string):
         if string == 'delete' and len(Edit_Row.rows_selected(self)) == 0: return
-        if string == 'add':
-            if not self.checkers_add_widget():
-                return
+        elif string == 'add' and not self.checkers_add_widget(): return
         dialog = Ui_Dialog2(string)
         result = dialog.exec()  # Запускаем диалоговое окно и ожидаем результата
         func = {

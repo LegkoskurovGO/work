@@ -20,7 +20,7 @@ class Edit_Row(Base_Class):
         elif hide:
             self.edit_widget.setHidden(hide)
             self.fill_edit_lineEdit()
-            self.init_table.setSelectionMode(QTableView.SelectionMode.MultiSelection)
+            self.init_table.setSelectionMode(self.settings_dict[self.cur_name]['mode'])
         else:
             old_row = self.init_table.model().init_data.iloc[sr[0], :].fillna('')
             
@@ -35,7 +35,7 @@ class Edit_Row(Base_Class):
             self.edit_city_lineEdit.setText(old_row['Город'])
             
             validator_grnti = QRegularExpressionValidator()
-            validator_grnti.setRegularExpression(QRegularExpression(r'^\d{2}\.\d{2}(\.\d{2})?\,\ \d{2}\.\d{2}(\.\d{2})?$'))
+            validator_grnti.setRegularExpression(QRegularExpression(r'^\d{1,2}(\.\d{2}(\.\d{2})?)?(((\,|\;| ){1} *){1}\d{1,2}(\.\d{2}(\.\d{2})?)?)?$'))
             self.edit_grnti_lineEdit.setValidator(validator_grnti)
             self.edit_grnti_lineEdit.setText(old_row['ГРНТИ'])
             
@@ -57,7 +57,7 @@ class Edit_Row(Base_Class):
             self.dict_reg.get(self.edit_city_lineEdit.text(), ''), # self.edit_region_comboBox
             self.edit_city_lineEdit.text(),
             self.edit_grnti_lineEdit.text(),
-            ', '.join(dict.fromkeys([self.dict_grnti.get(int(n.split(r'.')[0]), '') for n in self.edit_grnti_lineEdit.text().split(r', ')])), 
+            ', '.join(dict.fromkeys([a for n in self.edit_grnti_lineEdit.text().split(r', ') if (a := self.dict_grnti.get(n, ''))])), 
             self.edit_keywords_lineEdit.text(),
             old_row['Участие'],
             old_row['Дата добавления']
@@ -71,7 +71,7 @@ class Edit_Row(Base_Class):
             
             self.init_table.setModel(pandasModel(self.init_table.model().init_data))
             self.edit_widget.setHidden(True)
-            self.init_table.setSelectionMode(QTableView.SelectionMode.MultiSelection)
+            self.init_table.setSelectionMode(self.settings_dict[self.cur_name]['mode'])
 
 
     

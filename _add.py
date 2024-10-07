@@ -3,6 +3,8 @@ from _base import Base_Class, pandasModel
 from PyQt6.QtCore import QRegularExpression, QTimer
 from PyQt6.QtGui import QRegularExpressionValidator
 
+import re
+
 import pandas as pd
 from pandas.api.types import is_datetime64_any_dtype
 
@@ -12,13 +14,13 @@ class Add_Row(Base_Class):
     
     def fill_add_widget(self) -> None:    
         validator_grnti = QRegularExpressionValidator()
-        validator_grnti.setRegularExpression(QRegularExpression(r'^\d{2}\.\d{2}\,\ \d{2}\.\d{2}$'))
+        validator_grnti.setRegularExpression(QRegularExpression(r'^\d{2}(\.\d{2}(\.\d{2})?)?(((\,|\;| ){1} *){1}\d{2}(\.\d{2}(\.\d{2})?)?)?$'))
         self.addexpert_reg_comboBox.clear()
         self.addexpert_reg_comboBox.addItems([''] + sorted(self.df_reg['Округ'].unique()))
         self.addexpert_grnti_lineEdit.setValidator(validator_grnti)
         self.addexpert_name_lineEdit.setPlaceholderText('Введите ФИО эксперта')
         self.addexpert_city_lineEdit.setPlaceholderText('Введите город эксперта')
-        self.addexpert_grnti_lineEdit.setPlaceholderText('Введите ГРНТИ в формате:  00.00')
+        self.addexpert_grnti_lineEdit.setPlaceholderText('Введите код ГРНТИ: ')
         self.addexpert_keywords_lineEdit.setPlaceholderText('Введите ключевые слова')
         
         self.addexpert_name_lineEdit.setStyleSheet("")
@@ -42,6 +44,10 @@ class Add_Row(Base_Class):
             
     
     def get_row_add_widget(self) -> pd.DataFrame:
+        def int_(arg):
+            match arg:
+                case '': return ''
+                case _: return int(arg)
         new_row = pd.Series([
             self.df_ntp['Номер'].max()+1,
             self.addexpert_name_lineEdit.text(),
@@ -49,7 +55,7 @@ class Add_Row(Base_Class):
             self.dict_reg.get(self.addexpert_city_lineEdit.text(), ''), # self.addexpert_region_comboBox
             self.addexpert_city_lineEdit.text(),
             self.addexpert_grnti_lineEdit.text(),
-            self.dict_grnti.get(int(self.addexpert_grnti_lineEdit.text().split(r'.')[0]), ''),
+            self.dict_grnti.get(self.addexpert_grnti_lineEdit.text(), ''),
             self.addexpert_keywords_lineEdit.text(),
             0,
             pd.Timestamp.today().strftime('%d-%b-%y')
@@ -79,13 +85,21 @@ class Add_Row(Base_Class):
         return not self.settings_dict[self.cur_name]['df'].query(query_string).empty
     
     def is_empty_filed(self, row: pd.Series) -> bool:
-        return (~row.drop(['Ключевые слова', 'Участие']).astype(bool)).sum()
+        return (~row.drop(['Ключевые слова', 'Участие', "Расшифровка", "Регион"]).astype(bool)).sum()
     
+    def validate_grnti(self, row: pd.Series):# -> bool:
+        grnti: str = str(row['ГРНТИ'].values[0])
+        print(grnti)
+        if bool(re.match(r'^[0-9\s\.\,]+$', grnti)):
+            grnti_list = [value.replace(' ', '') for value in grnti.split(r',')]
+            print(f'{grnti_list = }')
+        # return 
     
     def checkers_add_widget(self) -> bool:
         new_row = self.get_row_add_widget()
         
         if self.is_unique_row(new_row.iloc[0]):
+            self.warning_addexpert_label.setText("Такой эксперт уже добавлен")
             self.warning_addexpert_label.setHidden(False)
             QTimer.singleShot(3000, lambda: self.warning_addexpert_label.setHidden(True))
             return False
@@ -98,6 +112,12 @@ class Add_Row(Base_Class):
                     getattr(self, f'addexpert_{i}_lineEdit').setStyleSheet("border: 1px solid red;")
                 else:
                     getattr(self, f'addexpert_{i}_lineEdit').setStyleSheet("")
+            return False
+        
+        if not bool(re.match(r'^[0-9\s\.\,]+$', str(new_row['ГРНТИ'].values[0]))):
+            self.warning_addexpert_label.setText("Не корректно введён ГРНТИ номер")
+            self.warning_addexpert_label.setHidden(False)
+            QTimer.singleShot(3000, lambda: self.warning_addexpert_label.setHidden(True))
             return False
         
         return True

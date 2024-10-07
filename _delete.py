@@ -8,7 +8,7 @@ class Delete_rows(Base_Class):
         rows = self.init_table.model().init_data.iloc[sr, :]
         ids = self.settings_dict[self.cur_name]['df'].query('`Номер` == @rows["Номер"].to_list()').index.to_list()
         
-        if (self.approve_delete() and len(sr) > 0):
+        if self.approve_delete() and len(sr) > 0:
             self.settings_dict[self.cur_name]['df'] = self.settings_dict[self.cur_name]['df'].drop(ids)
             self.df_ntp = self.df_ntp.drop(ids)
             self.init_table.setModel(pandasModel(self.settings_dict[self.cur_name]['df']))
