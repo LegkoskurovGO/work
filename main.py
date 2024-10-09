@@ -3,6 +3,10 @@ if not os.path.isfile('exit.py'):
     match sys.platform:
         case 'darwin': subprocess.run('pyuic6 -o exit.py -x exit.ui'.split())
         case _: subprocess.run('python -m PyQt6.uic.pyuic -o exit.py -x exit.ui'.split())    
+if not os.path.isfile('confirm_window.py'):
+    match sys.platform:
+        case 'darwin': subprocess.run('pyuic6 -o confirm_window.py -x confirm_window.ui'.split())
+        case _: subprocess.run('python -m PyQt6.uic.pyuic -o confirm_window.py -x confirm_window.ui'.split())    
 
 from _add import Add_Row
 from _edit import Edit_Row
