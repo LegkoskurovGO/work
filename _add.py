@@ -14,7 +14,7 @@ class Add_Row(Base_Class):
     
     def fill_add_widget(self) -> None:    
         validator_grnti = QRegularExpressionValidator()
-        validator_grnti.setRegularExpression(QRegularExpression(r'^\d{2}(\.\d{2}(\.\d{2})?)?(((\,|\;| ){1} *){1}\d{2}(\.\d{2}(\.\d{2})?)?)?$'))
+        validator_grnti.setRegularExpression(QRegularExpression(r'^\d{1,2}(\.\d{2}(\.\d{2})?)?(((\,|\;| ){1} *){1}\d{1,2}(\.\d{2}(\.\d{2})?)?)?$'))
         self.addexpert_reg_comboBox.clear()
         self.addexpert_reg_comboBox.addItems([''] + sorted(self.df_reg['Округ'].unique()))
         self.addexpert_grnti_lineEdit.setValidator(validator_grnti)
@@ -44,10 +44,8 @@ class Add_Row(Base_Class):
             
     
     def get_row_add_widget(self) -> pd.DataFrame:
-        def int_(arg):
-            match arg:
-                case '': return ''
-                case _: return int(arg)
+        grntis = ['0'*(len(i.split(r'.')[0]) % 2) + i for i in self.addexpert_grnti_lineEdit.text().split(r', ')]
+        
         new_row = pd.Series([
             self.df_ntp['Номер'].max()+1,
             self.addexpert_name_lineEdit.text(),
@@ -55,7 +53,7 @@ class Add_Row(Base_Class):
             self.dict_reg.get(self.addexpert_city_lineEdit.text(), ''), # self.addexpert_region_comboBox
             self.addexpert_city_lineEdit.text(),
             self.addexpert_grnti_lineEdit.text(),
-            self.dict_grnti.get(self.addexpert_grnti_lineEdit.text(), ''),
+            ', '.join(dict.fromkeys([raschif for num in grntis if (raschif := self.dict_grnti.get(num, ''))])),
             self.addexpert_keywords_lineEdit.text(),
             0,
             pd.Timestamp.today().strftime('%d-%b-%y')
@@ -81,19 +79,12 @@ class Add_Row(Base_Class):
     
     
     def is_unique_row(self, row: pd.Series) -> bool:
-        query_string = r'`ФИО` == @row["ФИО"] and `Округ` == @row["Округ"] and `Город` == @row["Город"]'
+        query_string = r'`ФИО` == @row["ФИО"] and `Округ` == @row["Округ"] and `Город` == @row["Город"] and `ГРНТИ` == @row["ГРНТИ"]'
         return not self.settings_dict[self.cur_name]['df'].query(query_string).empty
     
     def is_empty_filed(self, row: pd.Series) -> bool:
-        return (~row.drop(['Ключевые слова', 'Участие', "Расшифровка", "Регион"]).astype(bool)).sum()
+        return (~row.loc[['ФИО', 'Округ', 'Город', 'ГРНТИ']].astype(bool)).sum()
     
-    def validate_grnti(self, row: pd.Series):# -> bool:
-        grnti: str = str(row['ГРНТИ'].values[0])
-        print(grnti)
-        if bool(re.match(r'^[0-9\s\.\,]+$', grnti)):
-            grnti_list = [value.replace(' ', '') for value in grnti.split(r',')]
-            print(f'{grnti_list = }')
-        # return 
     
     def checkers_add_widget(self) -> bool:
         new_row = self.get_row_add_widget()

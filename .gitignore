@@ -4,3 +4,4 @@ venv
 *.ui
 confirm_window*.py
 exit*.py
+groups

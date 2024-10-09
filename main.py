@@ -1,3 +1,9 @@
+import os, subprocess, sys
+if not os.path.isfile('exit.py'):
+    match sys.platform:
+        case 'darwin': subprocess.run('pyuic6 -o exit.py -x exit.ui'.split())
+        case _: subprocess.run('python -m PyQt6.uic.pyuic -o exit.py -x exit.ui'.split())    
+
 from _add import Add_Row
 from _edit import Edit_Row
 from _base import Base_Class, Ui_Dialog2
@@ -8,7 +14,6 @@ from _experts import Experts
 
 from PyQt6.QtWidgets import QApplication
 
-import sys
 import pandas as pd
 
 pd.set_option('future.no_silent_downcasting', True)
@@ -66,6 +71,9 @@ class Ui_MainWindow2(Edit_Row, Add_Row, Table_Methods, Filter_table, Delete_rows
         
         # Подготовка к Сотрировке
         Table_Methods.__init__(self)
+        
+        from PyQt6.QtGui import QShortcut, QKeySequence
+        QShortcut(QKeySequence('Ctrl+4'), self).activated.connect(self.groups_show)
         
     def open_dialog(self, string):
         if string == 'delete' and len(Edit_Row.rows_selected(self)) == 0: return

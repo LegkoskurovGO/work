@@ -49,6 +49,8 @@ class Edit_Row(Base_Class):
         sr = self.rows_selected()
         old_row = self.init_table.model().init_data.iloc[sr[0], :]
         
+        grntis = ['0'*(len(i.split(r'.')[0]) % 2) + i for i in self.edit_grnti_lineEdit.text().split(r', ')]
+        
         new_row = pd.Series(
             [
             old_row['Номер'],
@@ -57,7 +59,7 @@ class Edit_Row(Base_Class):
             self.dict_reg.get(self.edit_city_lineEdit.text(), ''), # self.edit_region_comboBox
             self.edit_city_lineEdit.text(),
             self.edit_grnti_lineEdit.text(),
-            ', '.join(dict.fromkeys([a for n in self.edit_grnti_lineEdit.text().split(r', ') if (a := self.dict_grnti.get(n, ''))])), 
+            ', '.join(dict.fromkeys([raschif for num in grntis if (raschif := self.dict_grnti.get(num, ''))])), 
             self.edit_keywords_lineEdit.text(),
             old_row['Участие'],
             old_row['Дата добавления']
@@ -83,8 +85,8 @@ class Edit_Row(Base_Class):
     def varify_edding_row(self, new_row, old_row) -> bool:
         if not (bool(re.match(r'^[А-Яа-я\s\.]+$', new_row['ФИО'])) and bool(re.match(r'^[А-Яа-я\s\.]+$', new_row['Город']))):
             return False
-        query_string = r'`ФИО` == @new_row["ФИО"] and `Округ` == @new_row["Округ"] and `Город` == @new_row["Город"]'
-        return not (~new_row.drop(['Ключевые слова', 'Участие', "Регион", "Расшифровка"]).astype(bool)).sum() and self.settings_dict[self.cur_name]['df'].query(query_string).empty
+        query_string = r'`ФИО` == @new_row["ФИО"] and `Округ` == @new_row["Округ"] and `Город` == @new_row["Город"] and `ГРНТИ` == @new_row["ГРНТИ"] and `Ключевые слова` == @new_row["Ключевые слова"]'
+        return not (~new_row.loc[['ФИО', 'Округ', 'Город', 'ГРНТИ']].astype(bool)).sum() and self.settings_dict[self.cur_name]['df'].query(query_string).empty
         edding_row = (
             self.edit_name_lineEdit.text(),
             self.edit_reg_comboBox.currentText(),

@@ -6,7 +6,7 @@ from PyQt6.QtWidgets import QMainWindow, QDialog, QTableView, QWidget, QLineEdit
 from PyQt6.QtCore import QAbstractTableModel, Qt, QRect, QSettings
 from PyQt6.QtGui import QShortcut, QKeySequence
 
-import os, shutil
+import os
 import pandas as pd
 from pandas.api.types import is_datetime64_any_dtype
 
@@ -171,7 +171,7 @@ class Base_Class(QMainWindow, Ui_MainWindow):
         self.filter_close_button.setShortcut('escape')
         self.addexpert_close_button_.setShortcut('escape')
         self.edit_close_button.setShortcut('escape')
-        QShortcut(QKeySequence('Ctrl+q'), self).activated.connect(self.app_exit)
+        # QShortcut(QKeySequence('Ctrl+q'), self).activated.connect(self.app_exit)
         
     
     
@@ -179,7 +179,6 @@ class Base_Class(QMainWindow, Ui_MainWindow):
         return  {
             'ntp': {
                 'df': self.df_ntp.copy(),
-                # 'mode': QTableView.SelectionMode.MultiSelection,
                 'mode': QTableView.SelectionMode.ExtendedSelection,
                 'behave': QTableView.SelectionBehavior.SelectRows,
                 'label': 'Эксперты НТП'

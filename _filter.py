@@ -4,6 +4,7 @@ from PyQt6.QtCore import QRegularExpression
 from PyQt6.QtGui import QRegularExpressionValidator
 
 import pandas as pd
+import re
 
 class Filter_table(Base_Class):
     
@@ -36,17 +37,21 @@ class Filter_table(Base_Class):
             if filter_ != '':
                 if len(filter_string) > 1: filter_string += ' and '
                 if col_ != 'ГРНТИ' and col_ != 'Ключевые слова':
-                    filter_string += f'{col_}.str.contains("{filter_}")'
+                    filter_string += f'`{col_}`.str.contains("{filter_}", na=False, case=False)'
                 elif col_ == 'Ключевые слова':
-                    filter_ = filter_.split(r'((\,|\;| ){1} *){1}')
-                    for i in filter_:
-                        filter_string += f'`{col_}`.str.contains("{i}", na=False, case=False)'
+                    filter_ = re.split(r'(?:\s*,\s*|\s*;\s*|\s+)', filter_.strip())
+                    for n, i in enumerate(filter_):
+                        filter_string += f'`{col_}`.str.contains("{i}", na=False, case=False, regex=True)'
+                        if len(filter_) - (n + 1):
+                            filter_string += ' and '
                 else:
-                    filter_ = filter_.split(r'((\,|\;| ){1} *){1}')
-                    for i in filter_:
+                    filter_ = re.split(r'(?:\s*,\s*|\s*;\s*|\s+)', filter_.strip())
+                    for n, i in enumerate(filter_):
                         if len(i.split(r'.')[0]) == 1: i = '0' + i
-                        filter_string += f'`{col_}`.str.contains(r"^({i}|, {i})")'
-                        
+                        filter_string += f'`{col_}`.str.contains(r"(^{i}|, {i})", regex=True)'
+                        # filter_string += f'`{col_}`.str.contains(r"\b{i}", regex=True)'
+                        if len(filter_) - (n + 1):
+                            filter_string += ' and '
         return filter_string
     
     
@@ -70,6 +75,7 @@ class Filter_table(Base_Class):
     
     
     def reset_filter_widget(self) -> None:
+        self.init_table.setModel(pandasModel(self.settings_dict[self.cur_name]['df']))
         self.filter_name_lineEdit.setText('')
         self.filter_region_lineEdit.setText('')
         self.filter_reg_comboBox.setCurrentIndex(0),
