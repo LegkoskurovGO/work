@@ -57,43 +57,47 @@ class Ui_MainWindow2(Edit_Row, Add_Row, Table_Methods, Filter_table, Delete_rows
         
         # Отобразить пустую страницу
         self.start_position()
-        
         # Подключаем сигнал нажатия кнопки к методу
         self.btn_connect()
-        
         # Привязка клавиш
         self.keyboard_connect()
+        # Работа со слоями
+        self.layers()
         
         # Заполнить поля в Добавить
-        self.fill_add_widget()
-        
+        Add_Row.__init__(self)
         # Заполнить поля в Фильтр
-        self.fill_filter_lineEdit()
-        
+        Filter_table.__init__(self)
         # Заполнить поля в Редактировать
-        self.fill_edit_lineEdit()
-        
+        Edit_Row.__init__(self)
         # Подготовка к Сотрировке
         Table_Methods.__init__(self)
         
+        # Отображение "Эксперты НТП"
+        self.show_table('ntp')
+        
         from PyQt6.QtGui import QShortcut, QKeySequence
         QShortcut(QKeySequence('Ctrl+4'), self).activated.connect(self.groups_show)
-        
+   
     def open_dialog(self, string):
-        if string == 'delete' and len(Edit_Row.rows_selected(self)) == 0: return
-        elif string == 'add' and not self.checkers_add_widget(): return
+        func_before = {
+            'add'   : self.before_add_widget,
+            'edit'  : self.before_edit_widget,
+            'delete': self.before_delete_widget,
+            'group' : self.before_group_widget
+        }
+        if not func_before[string](): return
         dialog = Ui_Dialog2(string)
         result = dialog.exec()  # Запускаем диалоговое окно и ожидаем результата
-        func = {
-            'add': self.apply_add_widget,
-            'edit': self.apply_edit_widget,
+        func_after = {
+            'add'   : self.apply_add_widget,
+            'edit'  : self.apply_edit_widget,
             'delete': self.apply_delete_widget,
-            'group': self.save_group_widget
+            'group' : self.save_group_widget
         }
         match result:
-            case 1: func[string]()
-            case 0: return
-    
+            case 1: func_after[string]()
+            case 0: return 
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)

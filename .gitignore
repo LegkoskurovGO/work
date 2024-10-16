@@ -2,6 +2,7 @@ __pycache__
 venv
 .DS_Store
 *.ui
-confirm_window*.py
+*_window*.py
 exit*.py
 groups
+file*.py

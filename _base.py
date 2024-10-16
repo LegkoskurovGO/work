@@ -2,9 +2,9 @@ from exit import Ui_MainWindow
 from confirm_window import Ui_Dialog
 
 from PyQt6 import uic
-from PyQt6.QtWidgets import QMainWindow, QDialog, QTableView, QWidget, QLineEdit
-from PyQt6.QtCore import QAbstractTableModel, Qt, QRect, QSettings
-from PyQt6.QtGui import QShortcut, QKeySequence
+from PyQt6.QtWidgets import QMainWindow, QDialog, QTableView, QLineEdit
+from PyQt6.QtCore import QAbstractTableModel, Qt, QRect, QSettings, QRegularExpression
+from PyQt6.QtGui import QShortcut, QKeySequence, QRegularExpressionValidator
 
 import os
 import pandas as pd
@@ -74,33 +74,36 @@ class Base_Class(QMainWindow, Ui_MainWindow):
     def __init__(self):
         QMainWindow.__init__(self)
         self.ui = uic.loadUi('exit.ui', self) 
-        
         # Загружаем все данные в формате pd.DataFrame
         self.df_ntp, self.df_reg, self.df_grnti = self.load_data('data')
-        
         # Записываем переменные
         self.settings_dict = self.get_settings()
         self.cur_name: str = 'empty'
+        self.regex_grnti = r'^(?:\d{2}(\.(\d{2}(\.(\d{2})?)?)?)?)$'
+        self.regex_grntis = r'(?:^\d{2}(\.(\d{2}(\.(\d{2})?)?)?)?(\,\s\d{2}(\.(\d{2}(\.(\d{2})?)?)?)?)?)$'
+        # Валидаторы
+        self.validator_grnti = QRegularExpressionValidator(QRegularExpression(r'^(?:[\d\.]{2,8})$'))
+        self.validator_name = QRegularExpressionValidator(QRegularExpression(r'^(?:[А-ЯЁа-яё\.\s]+)$'))
+        self.validator_multi = QRegularExpressionValidator(QRegularExpression(r'^(?:[А-ЯЁа-яё\.\s\,]+)$'))
+        # Сохранение изменённых данных
         # self.save_abc()
     
     
     def app_exit(self) -> None: 
         # shutil.rmtree(os.path.realpath(os.path.join('.', 'groups')))
         exit()
-    def start_position(self) -> None:
+    def open_dialog(self, string):
+        pass
         
-        self.empty_page = QWidget()
-        self.empty_page.setObjectName("empty_page")
-        self.stackedWidget.addWidget(self.empty_page)
-        
-        self.stackedWidget.setCurrentWidget(self.empty_page)
-        self.filter_widget.setHidden(True)
+    def start_position(self, btns: bool = False) -> None:
+        self.stackedWidget.setCurrentWidget(self.page_1)
         self.addexpert_widget.setHidden(True)
         self.edit_widget.setHidden(True)
-        self.statusbar.setHidden(True)
-        self.warning_addexpert_label.setHidden(True)
-              
-        
+        self.filter_widget.setHidden(True)
+        self.add_widget.setHidden(btns)
+        self.ramka1.setHidden(btns)
+        self.ramka2.setHidden(btns)              
+            
 
     def load_data(self, dir_name: str) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
         if not os.path.isdir(os.path.join('.', dir_name)):
@@ -136,43 +139,56 @@ class Base_Class(QMainWindow, Ui_MainWindow):
         return df_ntp, df_reg, df_grnti
     
     
-    
     def btn_connect(self) -> None:
         # Меню
         self.ntp_show.triggered.connect(lambda: self.show_table('ntp'))
         self.reg_show.triggered.connect(lambda: self.show_table('reg'))
         self.grnti_show.triggered.connect(lambda: self.show_table('grnti'))
-        self.close_button.clicked.connect(lambda: self.show_table('empty'))
-        # Фильтр
+        # Главные кнопки
+        self.add_button.clicked.connect(lambda: self.show_add_widget(False))
+        self.delete_button.clicked.connect(lambda: self.open_dialog('delete'))
+        self.edit_button.clicked.connect(lambda: self.show_edit_widget(False))
+        self.add_expert_button.clicked.connect(lambda: self.open_dialog('group'))
         self.filter_button.clicked.connect(lambda: self.show_filter_widget(False))
+        # Фильтр
         self.filter_close_button.clicked.connect(lambda: self.show_filter_widget(True))
         self.filter_apply_button.clicked.connect(self.apply_filter_widget)
         self.filter_reset_button.clicked.connect(self.reset_filter_widget)
         # Добавить
-        self.add_button.clicked.connect(lambda: self.show_add_widget(False))
         self.addexpert_close_button_.clicked.connect(lambda: self.show_add_widget(True))
         self.addexpert_apply_button.clicked.connect(lambda: self.open_dialog('add'))
+        self.addexpert_reset_button.clicked.connect(self.reset_add_widget)
         # Редактировать
-        self.edit_button.clicked.connect(lambda: self.show_edit_widget(False))
         self.edit_close_button.clicked.connect(lambda: self.show_edit_widget(True))
         self.edit_apply_button.clicked.connect(lambda: self.open_dialog('edit'))
-        # Удалить
-        self.delete_button.clicked.connect(lambda: self.open_dialog('delete'))
+        self.edit_reset_button.clicked.connect(lambda: self.show_edit_widget(False))
         # Добавить в экспертную группу
-        self.add_expert_button.clicked.connect(lambda: self.open_dialog('group'))
-    
     
     
     def keyboard_connect(self) -> None:
+        # Меню
         self.ntp_show.setShortcut('Ctrl+1')
         self.reg_show.setShortcut('Ctrl+2')
         self.grnti_show.setShortcut('Ctrl+3')
-        self.close_button.setShortcut('Ctrl+w')
+        # Close widgets
         self.filter_close_button.setShortcut('escape')
         self.addexpert_close_button_.setShortcut('escape')
         self.edit_close_button.setShortcut('escape')
+        # Удалить экспертов
+        self.delete_button.setShortcut('backspace')
+        self.filter_button.setShortcut('f')
         # QShortcut(QKeySequence('Ctrl+q'), self).activated.connect(self.app_exit)
-        
+    
+    
+    def layers(self) -> None:
+        self.init_table.raise_()
+        self.init_tablename.raise_()
+        self.ramka1.lower()
+        self.ramka2.lower()
+        self.add_widget.lower()
+        self.addexpert_widget.raise_()
+        self.edit_widget.raise_()
+        self.filter_widget.raise_()
     
     
     def get_settings(self) -> dict:
@@ -185,49 +201,19 @@ class Base_Class(QMainWindow, Ui_MainWindow):
             },
             'reg': {
                 'df': self.df_reg.copy(),
-                'mode': QTableView.SelectionMode.NoSelection,
+                'mode': QTableView.SelectionMode.ExtendedSelection,
                 'behave': QTableView.SelectionBehavior.SelectItems,
                 'label': 'Справочник по регионам'
             },
             'grnti': {
                 'df': self.df_grnti.copy(),
-                'mode': QTableView.SelectionMode.NoSelection,
+                'mode': QTableView.SelectionMode.ExtendedSelection,
                 'behave': QTableView.SelectionBehavior.SelectItems,
                 'label': 'Код рубрики (ГРНТИ)'
             }
         }
 
 
-
-
-    # def load_data(self, dir_name: str) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
-    #     if not os.path.isdir(os.path.join('.', dir_name)):
-    #         print(f'Нет папки {dir_name} с данными')
-    #         return
-        
-    #     # Загружаем данные
-    #     params = {'dtype': { 'kod': 'int16', 'take_part': 'int8'}, 'parse_dates': [7], 'date_format': '%d-%b-%y'}
-        
-    #     df_ntp = pd.read_csv(os.path.join('.', dir_name, 'Expert.csv'), **params)
-    #     df_reg = pd.read_csv(os.path.join('.', dir_name, 'Reg_obl_city.csv'))
-    #     df_grnti = pd.read_csv(os.path.join('.', dir_name, 'grntirub.csv'))
-        
-    #     # Преобразование значений 
-    #     df_ntp['grnti'] = df_ntp['grnti'].str.split(r'; |, |. | ;| ,| .|;|,| ').map(lambda x: ', '.join(x)).str.rstrip('.')
-    #     list_key_words = ['Специалист', 'Профессионал', 'Эксперт', 'Научный сотрудник', 'Академик', '', '', '', '']
-    #     df_ntp['key_words'] = np.random.choice(list_key_words, df_ntp.shape[0])
-        
-    #     # Переименование столбцов
-    #     df_ntp.columns = ['Номер', 'ФИО', 'Округ', 'Город', 'ГРНТИ', 'Ключевые слова', 'Участие', 'Дата добавления']
-    #     df_reg.columns = ['Округ', 'Регион', 'Город']
-    #     df_grnti.columns = ['Код', 'Расшифровка']
-
-          # df_ntp['ГРНТИ'] = df_ntp['ГРНТИ'].str.split(r', ').map(lambda x: ', '.join(sorted(x)))
-          
-    #     # Меняем индексацию по первичному ключу Номер
-    #     # df_ntp = df_ntp.set_index('Номер')
-        
-    #     return df_ntp, df_reg, df_grnti
     # def save_abc(self):
     #     self.df_ntp.to_csv('./data2/Expert.csv', index=False, encoding="utf-8", date_format='%d-%b-%y')
     #     self.df_reg.to_csv('./data2/Reg_obl_city.csv', index=False, encoding="utf-8", date_format='%d-%b-%y')

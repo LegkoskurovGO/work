@@ -14,6 +14,11 @@ class Experts(Base_Class):
         self.stackedWidget.setCurrentIndex(1)
         self.show_group_table()
     
+    
+    def before_group_widget(self):
+        return True
+    
+    
     def show_group_table(self, group_name='abc') -> None:
         file_path = os.path.join('.', 'groups', 'names.txt')
         
@@ -23,7 +28,8 @@ class Experts(Base_Class):
                 for line in f:
                     if group_name.strip() == line.split(",")[1].strip():
                         file_name = line.split(",")[0].strip()
-        else: raise NameError
+        else: 
+            raise NameError
         df = self.load_groups(file_name)
         self.work_table.setModel(pandasModel(df))
         self.work_table.setSelectionMode(QTableView.SelectionMode.ExtendedSelection)
@@ -38,27 +44,34 @@ class Experts(Base_Class):
         self.check_table.setColumnCount(1)
         self.check_table.setRowCount(rows)
         self.check_table.verticalHeader().setVisible(False)
-        self.check_table.setHorizontalHeaderLabels(['Включить эксперта'])
+        self.check_table.setHorizontalHeaderLabels(['Включить'])
         for row in range(rows):
             # item = QtWidgets.QTableWidgetItem()
             # checkbox = QtWidgets.QCheckBox()
-            checkbox = QtWidgets.QTableWidgetItem()
-            # checkbox.setStyleSheet('QCheckBox:{margin: 10px;}')
-            # checkbox.stateChanged.connect(lambda state, row=row: self.checkbox_state_changed(state, row))
+            # checkbox.setStyleSheet("QCheckBox::indicator{width:64px;}")
             # item.setData(QtCore.Qt.ItemDataRole.CheckStateRole, QtCore.Qt.CheckState.Unchecked)
             # item.setData(QtCore.Qt.ItemDataRole.UserRole, checkbox)
-            checkbox.setFlags(QtCore.Qt.ItemFlag.ItemIsUserCheckable | QtCore.Qt.ItemFlag.ItemIsEnabled)
-            checkbox.setCheckState(QtCore.Qt.CheckState.Unchecked) 
-            self.check_table.setItem(row, 0, checkbox)
             # self.check_table.setItem(row, 0, item)
+            # ------
+            checkbox = QtWidgets.QCheckBox()
+            # Изменяем стиль индикатора флажка, а не самого флажка
+            checkbox.setStyleSheet("QCheckBox::indicator{width:59px;height:30px;}") 
+            self.check_table.setCellWidget(row, 0, checkbox)
+            self.check_table.setContentsMargins(0,0,0,0)
+            # self.check_table.geometry()
+            
         self.check_table.verticalScrollBar().valueChanged.connect(self.sync_scroll)
         self.work_table.verticalScrollBar().valueChanged.connect(self.sync_scroll)
+                
+        self.check_table.setHorizontalScrollBarPolicy(QtCore.Qt.ScrollBarPolicy.ScrollBarAlwaysOn)
+        self.work_table.setHorizontalScrollBarPolicy(QtCore.Qt.ScrollBarPolicy.ScrollBarAlwaysOn)
         
-        self.check_table.setHorizontalScrollBarPolicy(QtCore.Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
-        self.work_table.setHorizontalScrollBarPolicy(QtCore.Qt.ScrollBarPolicy.ScrollBarAsNeeded)
-        
-        self.check_table.setVerticalScrollBarPolicy(QtCore.Qt.ScrollBarPolicy.ScrollBarAsNeeded)
+        self.check_table.setVerticalScrollBarPolicy(QtCore.Qt.ScrollBarPolicy.ScrollBarAlwaysOn)
         self.work_table.setVerticalScrollBarPolicy(QtCore.Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
+        
+        self.check_table.resizeColumnsToContents()
+        # print(f'{self.check_table.columnWidth(0) = }')
+        self.check_table.setGeometry(QtCore.QRect(1090, 70, 82, 620))
         
     
     def checkbox_state_changed(self, state, row):
@@ -114,8 +127,16 @@ class Experts(Base_Class):
         # df = pd.read_pickle(file_name)
         return df
     
-    def list_of_groups(self):
-        pass
+    def list_of_groups(self) -> dict:
+        name_group_dict = dict()
+        file_path = os.path.join('.', 'groups', 'names.txt')
+        if os.path.exists(file_path):
+            with open(file_path, "r", encoding="utf-8") as f:
+                name_group_dict = {line.split(',')[1].strip(): line.split(',')[0] for line in f}
+        import pprint
+        pprint.pprint(name_group_dict)
+        return name_group_dict
+            
 
     def save_dataframe_with_names(self, df: pd.DataFrame, group_name: str):
         if not os.path.isdir(os.path.join('.', 'groups')):
