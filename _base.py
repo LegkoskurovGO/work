@@ -1,9 +1,11 @@
 from exit import Ui_MainWindow
-from confirm_window import Ui_Dialog
+from Dialog_confirm import Ui_Dialog as Ui_Confirm
+from Dialog_lineEdit import Ui_Dialog as Ui_lineEdit
+from Dialog_comboBox import Ui_Dialog as Ui_comboBox
 
 from PyQt6 import uic
-from PyQt6.QtWidgets import QMainWindow, QDialog, QTableView, QLineEdit
-from PyQt6.QtCore import QAbstractTableModel, Qt, QRect, QSettings, QRegularExpression
+from PyQt6.QtWidgets import QMainWindow, QDialog, QTableView
+from PyQt6.QtCore import QAbstractTableModel, Qt, QSettings, QRegularExpression
 from PyQt6.QtGui import QShortcut, QKeySequence, QRegularExpressionValidator
 
 import os
@@ -35,36 +37,59 @@ class pandasModel(QAbstractTableModel):
         return None
 
 
-class Ui_Dialog2(QDialog, Ui_Dialog):
+class Ui_Dialog_confirm(QDialog, Ui_Confirm):
     def __init__(self, string):
         QDialog.__init__(self)
-        self.ui = uic.loadUi('confirm_window.ui', self)
+        self.ui = uic.loadUi('Dialog_confirm.ui', self)
         diag_label = {
-            'add': 'Подтвердите добавление строчки',
-            'edit': 'Подтвердите редактирование строчки',
-            'delete': 'Подтвердите удаление строчки',
-            'group': 'Введите имя группы'
+            'add': 'Подтвердите добавление строки',
+            'edit': 'Подтвердите изменение строки',
+            'delete': 'Подтвердите удаление строк'
         }
-        self.confirmation_label.setText(diag_label[string])
-        self.confirm_button.clicked.connect(self.accept)    # Подтверждение
-        self.cancel_button.clicked.connect(self.reject)     # Отмена
-        self.confirm_button.setShortcut('Ctrl+1')
-        self.cancel_button.setShortcut('Ctrl+2')
-        
-        if string == 'group':
-            # TODO: Кастыль
-            self.lfile_name = QLineEdit(self)
-            self.lfile_name.setGeometry(QRect(40, 61, 441, 31))
-            self.lfile_name.setObjectName("lfile_name")
-            
-            # Подключаем сигнал rejected к слоту
-            self.accepted.connect(self.on_close)
+        self.label.setText(diag_label[string])
+        self.confirm_button.clicked.connect(self.accept)
+        self.cancel_button.clicked.connect(self.reject)
+        self.confirm_button.setShortcut('enter')
+        self.cancel_button.setShortcut('escape')
 
+
+class Ui_Dialog_lineEdit(QDialog, Ui_lineEdit):
+    def __init__(self, string):
+        QDialog.__init__(self)
+        self.ui = uic.loadUi('Dialog_lineEdit.ui', self)
+        diag_label = {
+            'new_group': 'Создать группу',
+            'save_group': 'Сохранить группу'
+        }
+        self.confirm_button.setText(diag_label[string])
+        self.confirm_button.clicked.connect(self.accept)
+        self.cancel_button.clicked.connect(self.reject)
+        self.confirm_button.setShortcut('enter')
+        self.cancel_button.setShortcut('escape')
+
+        # Подключаем сигнал rejected к слоту
+        self.accepted.connect(self.on_close)
     def on_close(self):
         # Читаем значения из объектов диалога
         settings = QSettings("MyCompany", "MyApp")
-        settings.setValue("file_name", self.lfile_name.text()) # Сохраняем значение
+        settings.setValue("file_name", self.name_lineEdit.text()) # Сохраняем значение
 
+
+class Ui_Dialog_comboBox(QDialog, Ui_comboBox):
+    def __init__(self, string):
+        QDialog.__init__(self)
+        self.ui = uic.loadUi('Dialog_comboBox.ui', self)
+        self.confirm_button.clicked.connect(self.accept)
+        self.cancel_button.clicked.connect(self.reject)
+        self.confirm_button.setShortcut('enter')
+        self.cancel_button.setShortcut('escape')
+
+        # Подключаем сигнал rejected к слоту
+        self.accepted.connect(self.on_close)
+    def on_close(self):
+        # Читаем значения из объектов диалога
+        settings = QSettings("MyCompany", "MyApp")
+        settings.setValue("file_name", self.choose_comboBox.currentText()) # Сохраняем значение
 
 
 
@@ -97,12 +122,13 @@ class Base_Class(QMainWindow, Ui_MainWindow):
         
     def start_position(self, btns: bool = False) -> None:
         self.stackedWidget.setCurrentWidget(self.page_1)
+        self.help_widget.setHidden(True)
         self.addexpert_widget.setHidden(True)
         self.edit_widget.setHidden(True)
         self.filter_widget.setHidden(True)
         self.add_widget.setHidden(btns)
         self.ramka1.setHidden(btns)
-        self.ramka2.setHidden(btns)              
+        self.ramka2.setHidden(btns)
             
 
     def load_data(self, dir_name: str) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
@@ -144,11 +170,12 @@ class Base_Class(QMainWindow, Ui_MainWindow):
         self.ntp_show.triggered.connect(lambda: self.show_table('ntp'))
         self.reg_show.triggered.connect(lambda: self.show_table('reg'))
         self.grnti_show.triggered.connect(lambda: self.show_table('grnti'))
+        self.hotkeys_show.triggered.connect(lambda: self.help_widget.setHidden(False))
         # Главные кнопки
         self.add_button.clicked.connect(lambda: self.show_add_widget(False))
         self.delete_button.clicked.connect(lambda: self.open_dialog('delete'))
         self.edit_button.clicked.connect(lambda: self.show_edit_widget(False))
-        self.add_expert_button.clicked.connect(lambda: self.open_dialog('group'))
+        self.add_expert_button.clicked.connect(lambda: self.open_dialog('new_group'))
         self.filter_button.clicked.connect(lambda: self.show_filter_widget(False))
         # Фильтр
         self.filter_close_button.clicked.connect(lambda: self.show_filter_widget(True))
@@ -162,6 +189,8 @@ class Base_Class(QMainWindow, Ui_MainWindow):
         self.edit_close_button.clicked.connect(lambda: self.show_edit_widget(True))
         self.edit_apply_button.clicked.connect(lambda: self.open_dialog('edit'))
         self.edit_reset_button.clicked.connect(lambda: self.show_edit_widget(False))
+        # Помощь
+        self.help_close_button.clicked.connect(lambda: self.help_widget.setHidden(True))
         # Добавить в экспертную группу
     
     
@@ -189,6 +218,7 @@ class Base_Class(QMainWindow, Ui_MainWindow):
         self.addexpert_widget.raise_()
         self.edit_widget.raise_()
         self.filter_widget.raise_()
+        self.help_widget.raise_()
     
     
     def get_settings(self) -> dict:

@@ -1,4 +1,4 @@
-from _base import Base_Class, pandasModel, Ui_Dialog2
+from _base import Base_Class, pandasModel, Ui_Dialog_lineEdit
 from _edit import Edit_Row
 
 from PyQt6.QtCore import QSettings
@@ -133,8 +133,6 @@ class Experts(Base_Class):
         if os.path.exists(file_path):
             with open(file_path, "r", encoding="utf-8") as f:
                 name_group_dict = {line.split(',')[1].strip(): line.split(',')[0] for line in f}
-        import pprint
-        pprint.pprint(name_group_dict)
         return name_group_dict
             
 

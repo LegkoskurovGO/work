@@ -1,4 +1,5 @@
 from _base import Base_Class, pandasModel
+from _edit import Edit_Row
 
 from PyQt6.QtCore import QTimer
 
@@ -22,15 +23,50 @@ class Add_Row(Base_Class):
         self.addexpert_grnti2_lineEdit.setValidator(self.validator_grnti)
         self.addexpert_keywords_lineEdit.setValidator(self.validator_multi)
         # Заполнение CheckBox
-        self.addexpert_reg_comboBox.clear()
-        self.addexpert_reg_comboBox.addItems([''] + sorted(self.df_reg['Округ'].unique()))
-        self.addexpert_region_comboBox.clear()
-        self.addexpert_region_comboBox.addItems([''] + sorted(self.df_reg['Регион'].unique()))
-        self.addexpert_city_comboBox.clear()
-        self.addexpert_city_comboBox.addItems([''] + sorted(self.df_reg['Город'].unique()))
+        self.connect_on_off_add(True)
+        self.fill_add_checkBox()
         # Скрыть ошибку
         self.warning_addexpert_label.setHidden(True)
         
+    
+    def fill_add_checkBox(self, comdict: dict | None = None):
+        # Временно отключаем сигнал currentIndexChanged
+        self.connect_on_off_add(False)
+        
+        self.addexpert_reg_comboBox.clear()
+        self.addexpert_region_comboBox.clear()
+        self.addexpert_city_comboBox.clear()
+        if comdict is None:
+            self.addexpert_reg_comboBox.addItems([''] + sorted(self.df_reg['Округ'].unique()))
+            self.addexpert_region_comboBox.addItems([''] + sorted(self.df_reg['Регион'].unique()))
+            self.addexpert_city_comboBox.addItems([''] + sorted(self.df_reg['Город'].unique()))
+        else:
+            self.addexpert_reg_comboBox.addItems([''] + sorted(comdict['reg_list']))
+            self.addexpert_region_comboBox.addItems([''] + comdict['region_list'])
+            self.addexpert_city_comboBox.addItems([''] + comdict['city_list'])
+            
+            self.addexpert_reg_comboBox.setCurrentText(comdict['reg_main'])
+            self.addexpert_region_comboBox.setCurrentText(comdict['region_main'])
+            self.addexpert_city_comboBox.setCurrentText(comdict['city_main'])
+        # Временно отключаем сигнал currentIndexChanged
+        self.connect_on_off_add(True)
+    
+    
+    def update_add_cB(self, colname: str, colvalue: str):
+        dict_cB = Edit_Row.get_less_list(self, colname, colvalue)
+        self.fill_add_checkBox(dict_cB)
+    
+    
+    def connect_on_off_add(self, flag: bool = True):
+        if flag:
+            self.addexpert_reg_comboBox.currentTextChanged.connect(lambda x: self.update_add_cB('Округ', x))
+            self.addexpert_region_comboBox.currentTextChanged.connect(lambda x: self.update_add_cB('Регион', x))
+            self.addexpert_city_comboBox.currentTextChanged.connect(lambda x: self.update_add_cB('Город', x))
+        else:
+            self.addexpert_reg_comboBox.currentTextChanged.disconnect()
+            self.addexpert_region_comboBox.currentTextChanged.disconnect()
+            self.addexpert_city_comboBox.currentTextChanged.disconnect()
+    
         
     def apply_add_widget(self) -> None:
         new_row = self.get_row_add_widget()
@@ -117,7 +153,7 @@ class Add_Row(Base_Class):
                     getattr(self, f'addexpert_{i}_comboBox').setStyleSheet("border: 1px solid red;")
             return False
         if regex_correct(new_row.iloc[0]):
-            self.warning_addexpert_label.setText("Не корректно введёны ГРНТИ номера")
+            self.warning_addexpert_label.setText("Некорректный формат ГРНТИ!")
             self.warning_addexpert_label.setHidden(False)
             QTimer.singleShot(5000, lambda: self.warning_addexpert_label.setHidden(True))
             return False

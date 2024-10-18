@@ -1,10 +1,21 @@
 from _base import Base_Class, pandasModel
 from _edit import Edit_Row
 
+from PyQt6.QtCore import QTimer
+
 class Delete_rows(Base_Class):
     
+    def __init__(self):
+        self.warning_delete_label.setHidden(True)
+    
     def before_delete_widget(self):
-        return len(Edit_Row.rows_selected(self)) > 0
+        if len(Edit_Row.rows_selected(self)) > 0:
+            self.warning_delete_label.setHidden(True)
+            return True
+        else: 
+            self.warning_delete_label.setHidden(False)
+            QTimer.singleShot(3000, lambda: self.warning_delete_label.setHidden(True))
+            return False
     
     def apply_delete_widget(self) -> None:
         sr = Edit_Row.rows_selected(self)

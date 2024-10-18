@@ -19,7 +19,10 @@ class Table_Methods(Base_Class):
         self.init_table.setSelectionBehavior(df_['behave'])
         self.init_tablename.setText(df_['label'])
         self.init_table.resizeColumnsToContents()
-    
+        # Укорачивание столбца Расшифровка
+        for id, col in enumerate(self.init_table.model().init_data.columns):
+            if col == 'Расшифровка':
+                self.init_table.setColumnWidth(id, 500); break
         self.stackedWidget.setCurrentWidget(self.page_1)
     
     def sort_table(self, col: int) -> None:

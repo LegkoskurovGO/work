@@ -51,7 +51,7 @@ class Filter_table(Base_Class):
                 case 'Ключевые слова':
                     filter_ = filter_.strip().split(',')
                     for n, i in enumerate(filter_):
-                        filter_string += f'`{col_}`.str.contains(r"{i}", na=False, case=False, regex=True)'
+                        filter_string += f'`{col_}`.str.contains(r"{i}", na=False, case=True, regex=True)'
                         if len(filter_) - (n + 1): filter_string += ' and '
                 case 'ГРНТИ':
                     filter_ = re.split(r'(?:\s*,\s*|\s*;\s*|\s+)', filter_.strip())
@@ -60,7 +60,6 @@ class Filter_table(Base_Class):
                         if len(filter_) - (n + 1): filter_string += ' and '
                 case _:
                     filter_string += f'`{col_}`.str.contains("{filter_}", na=False, case=False)'
-        print(filter_string)
         return filter_string
     
     

@@ -1,16 +1,13 @@
 import os, subprocess, sys
-if not os.path.isfile('exit.py'):
-    match sys.platform:
-        case 'darwin': subprocess.run('pyuic6 -o exit.py -x exit.ui'.split())
-        case _: subprocess.run('python -m PyQt6.uic.pyuic -o exit.py -x exit.ui'.split())    
-if not os.path.isfile('confirm_window.py'):
-    match sys.platform:
-        case 'darwin': subprocess.run('pyuic6 -o confirm_window.py -x confirm_window.ui'.split())
-        case _: subprocess.run('python -m PyQt6.uic.pyuic -o confirm_window.py -x confirm_window.ui'.split())    
+for name in ('exit', 'Dialog_confirm', 'Dialog_comboBox', 'Dialog_lineEdit'):
+    if not os.path.isfile(f'{name}.py'):
+        match sys.platform:
+            case 'darwin': subprocess.run(f'pyuic6 -o {name}.py -x {name}.ui'.split())
+            case _: subprocess.run(f'python -m PyQt6.uic.pyuic -o {name}.py -x {name}.ui'.split())       
 
 from _add import Add_Row
 from _edit import Edit_Row
-from _base import Base_Class, Ui_Dialog2
+from _base import Base_Class, Ui_Dialog_confirm, Ui_Dialog_lineEdit, Ui_Dialog_comboBox
 from _table import Table_Methods
 from _filter import Filter_table
 from _delete import Delete_rows
@@ -64,6 +61,8 @@ class Ui_MainWindow2(Edit_Row, Add_Row, Table_Methods, Filter_table, Delete_rows
         # Работа со слоями
         self.layers()
         
+        # Скрыть предупреждение
+        Delete_rows.__init__(self)
         # Заполнить поля в Добавить
         Add_Row.__init__(self)
         # Заполнить поля в Фильтр
@@ -84,17 +83,27 @@ class Ui_MainWindow2(Edit_Row, Add_Row, Table_Methods, Filter_table, Delete_rows
             'add'   : self.before_add_widget,
             'edit'  : self.before_edit_widget,
             'delete': self.before_delete_widget,
-            'group' : self.before_group_widget
+            'new_group' : self.before_group_widget
+            # 'choose_group' : self.before_group_widget 
         }
-        if not func_before[string](): return
-        dialog = Ui_Dialog2(string)
-        result = dialog.exec()  # Запускаем диалоговое окно и ожидаем результата
+        dialog_ui = {
+            'add'   : Ui_Dialog_confirm,
+            'edit'  : Ui_Dialog_confirm,
+            'delete': Ui_Dialog_confirm,
+            'new_group' : Ui_Dialog_lineEdit
+            # 'choose_group' : Ui_Dialog_comboBox 
+        }
         func_after = {
             'add'   : self.apply_add_widget,
             'edit'  : self.apply_edit_widget,
             'delete': self.apply_delete_widget,
-            'group' : self.save_group_widget
+            'new_group' : self.save_group_widget
+            # 'choose_group' : self.load_group_widget 
         }
+        if not func_before[string]():
+            return
+        dialog = dialog_ui[string](string)
+        result = dialog.exec()  # Запускаем диалоговое окно и ожидаем результата
         match result:
             case 1: func_after[string]()
             case 0: return 
