@@ -44,7 +44,9 @@ class Ui_Dialog_confirm(QDialog, Ui_Confirm):
         diag_label = {
             'add': 'Подтвердите добавление строки',
             'edit': 'Подтвердите изменение строки',
-            'delete': 'Подтвердите удаление строк'
+            'delete': 'Подтвердите удаление строк',
+            'delete_group': 'Подтвердите удаление группы',
+            'delete_group_part': 'Подтвердите удаление строк'
         }
         self.label.setText(diag_label[string])
         self.confirm_button.clicked.connect(self.accept)
@@ -72,7 +74,7 @@ class Ui_Dialog_lineEdit(QDialog, Ui_lineEdit):
     def on_close(self):
         # Читаем значения из объектов диалога
         settings = QSettings("MyCompany", "MyApp")
-        settings.setValue("file_name", self.name_lineEdit.text()) # Сохраняем значение
+        settings.setValue("name_lineEdit", self.name_lineEdit.text()) # Сохраняем значение
 
 
 class Ui_Dialog_comboBox(QDialog, Ui_comboBox):
@@ -83,13 +85,23 @@ class Ui_Dialog_comboBox(QDialog, Ui_comboBox):
         self.cancel_button.clicked.connect(self.reject)
         self.confirm_button.setShortcut('enter')
         self.cancel_button.setShortcut('escape')
+        
+        self.choose_comboBox.clear()
+        self.choose_comboBox.addItems([''] + self.list_of_groups())
 
         # Подключаем сигнал rejected к слоту
         self.accepted.connect(self.on_close)
     def on_close(self):
         # Читаем значения из объектов диалога
         settings = QSettings("MyCompany", "MyApp")
-        settings.setValue("file_name", self.choose_comboBox.currentText()) # Сохраняем значение
+        settings.setValue("choose_comboBox", self.choose_comboBox.currentText()) # Сохраняем значение
+    def list_of_groups(self) -> list:
+        name_group_list = list()
+        file_path = os.path.join('.', 'groups', 'names.txt')
+        if os.path.exists(file_path):
+            with open(file_path, "r", encoding="utf-8") as f:
+                name_group_list = [','.join(line.split(',')[1:]).strip() for line in f]
+        return name_group_list
 
 
 
@@ -106,9 +118,11 @@ class Base_Class(QMainWindow, Ui_MainWindow):
         self.cur_name: str = 'empty'
         self.regex_grnti = r'^(?:\d{2}(\.(\d{2}(\.(\d{2})?)?)?)?)$'
         self.regex_grntis = r'(?:^\d{2}(\.(\d{2}(\.(\d{2})?)?)?)?(\,\s\d{2}(\.(\d{2}(\.(\d{2})?)?)?)?)?)$'
+        self.regex_name = r'^(?:[А-ЯЁа-яё]+)(?:\s([А-ЯЁа-яё]+|[А-ЯЁа-яё]\.)((\s[А-ЯЁа-яё]+|\s?[А-ЯЁа-яё]\.))?)?$'
         # Валидаторы
         self.validator_grnti = QRegularExpressionValidator(QRegularExpression(r'^(?:[\d\.]{2,8})$'))
         self.validator_name = QRegularExpressionValidator(QRegularExpression(r'^(?:[А-ЯЁа-яё\.\s]+)$'))
+        self.validator_name_edit = QRegularExpressionValidator(QRegularExpression(r'^(?:[А-ЯЁа-яё\.\s]+)$'))
         self.validator_multi = QRegularExpressionValidator(QRegularExpression(r'^(?:[А-ЯЁа-яё\.\s\,]+)$'))
         # Сохранение изменённых данных
         # self.save_abc()
@@ -139,7 +153,8 @@ class Base_Class(QMainWindow, Ui_MainWindow):
         params = {'dtype': { 'Номер': 'int16', 'Участие': 'int8'}, 'parse_dates': [7], 'date_format': '%d-%b-%y'}
         
         df_ntp = pd.read_csv(os.path.join('.', dir_name, 'Expert.csv'), **params)
-        df_reg = pd.read_csv(os.path.join('.', dir_name, 'Reg_obl_city.csv'), delimiter=';')
+        # df_reg = pd.read_csv(os.path.join('.', dir_name, 'Reg_obl_city.csv'), delimiter=';')
+        df_reg = pd.read_csv(os.path.join('.', dir_name, 'russian_cities.csv'), delimiter=';')
         # df_grnti = pd.read_csv(os.path.join('.', dir_name, 'grntirub.csv'))
         df_grnti = pd.read_csv(os.path.join('.', dir_name, 'grnti-latest.csv'), header=0, usecols=[0,1], names=['Код', 'Расшифровка']).drop_duplicates(keep='first')
         
@@ -170,6 +185,9 @@ class Base_Class(QMainWindow, Ui_MainWindow):
         self.ntp_show.triggered.connect(lambda: self.show_table('ntp'))
         self.reg_show.triggered.connect(lambda: self.show_table('reg'))
         self.grnti_show.triggered.connect(lambda: self.show_table('grnti'))
+        self.load_group.triggered.connect(lambda: self.open_dialog('choose_group'))
+        self.save_group.triggered.connect(lambda: self.open_dialog('new_group'))
+        self.delete_group.triggered.connect(lambda: self.open_dialog('delete_group'))
         self.hotkeys_show.triggered.connect(lambda: self.help_widget.setHidden(False))
         # Главные кнопки
         self.add_button.clicked.connect(lambda: self.show_add_widget(False))
@@ -191,7 +209,11 @@ class Base_Class(QMainWindow, Ui_MainWindow):
         self.edit_reset_button.clicked.connect(lambda: self.show_edit_widget(False))
         # Помощь
         self.help_close_button.clicked.connect(lambda: self.help_widget.setHidden(True))
-        # Добавить в экспертную группу
+        # Работа с экспертными группами
+        self.edit_group_button.clicked.connect(lambda: self.open_dialog('delete_group_part'))
+        # self.approve_group_button.clicked.connect(lambda: self.open_dialog('approve_group'))
+        self.add_group_button.clicked.connect(lambda: self.open_dialog('merge_group'))
+        
     
     
     def keyboard_connect(self) -> None:
@@ -199,6 +221,9 @@ class Base_Class(QMainWindow, Ui_MainWindow):
         self.ntp_show.setShortcut('Ctrl+1')
         self.reg_show.setShortcut('Ctrl+2')
         self.grnti_show.setShortcut('Ctrl+3')
+        self.load_group.setShortcut('Ctrl+4')
+        self.save_group.setShortcut('Ctrl+5')
+        self.delete_group.setShortcut('Ctrl+6')
         # Close widgets
         self.filter_close_button.setShortcut('escape')
         self.addexpert_close_button_.setShortcut('escape')

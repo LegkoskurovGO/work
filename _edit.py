@@ -15,7 +15,7 @@ class Edit_Row(Base_Class):
         self.edit_grnti2_lineEdit.setPlaceholderText('Формат: 00.00.00')
         self.edit_keywords_lineEdit.setPlaceholderText('Ключевые слова через запятую:')
         # Валидация
-        self.edit_name_lineEdit.setValidator(self.validator_name)
+        self.edit_name_lineEdit.setValidator(self.validator_name_edit)
         self.edit_grnti_lineEdit.setValidator(self.validator_grnti)
         self.edit_grnti2_lineEdit.setValidator(self.validator_grnti)
         self.edit_keywords_lineEdit.setValidator(self.validator_multi)
@@ -52,12 +52,13 @@ class Edit_Row(Base_Class):
         self.edit_reg_comboBox.clear()
         self.edit_region_comboBox.clear()
         self.edit_city_comboBox.clear()
+        
         if comdict is None:
             self.edit_reg_comboBox.addItems([''] + sorted(self.df_reg['Округ'].unique()))
             self.edit_region_comboBox.addItems([''] + sorted(self.df_reg['Регион'].unique()))
             self.edit_city_comboBox.addItems([''] + sorted(self.df_reg['Город'].unique()))
         else:
-            self.edit_reg_comboBox.addItems([''] + sorted(comdict['reg_list']))
+            self.edit_reg_comboBox.addItems([''] + comdict['reg_list'])
             self.edit_region_comboBox.addItems([''] + comdict['region_list'])
             self.edit_city_comboBox.addItems([''] + comdict['city_list'])
             
@@ -90,20 +91,34 @@ class Edit_Row(Base_Class):
         reg_main    = colvalue if colname == 'Округ' else ''
         region_main = colvalue if colname == 'Регион' else ''
         city_main   = colvalue if colname == 'Город' else ''
+        
+        if (reg_main, region_main, city_main) == ('','',''):
+            return {
+            'reg_main'      : reg_main,
+            'region_main'   : region_main,
+            'city_main'     : city_main,
+            'reg_list'      : sorted(self.df_reg['Округ'].unique()),
+            'region_list'   : sorted(self.df_reg['Регион'].unique()),
+            'city_list'     : sorted(self.df_reg['Город'].unique())
+        }
 
         match colname:
+            case 'Округ':
+                city_list   = sorted(self.df_reg.query('`Округ` == @reg_main')['Город'].unique())
             case 'Регион':
                 reg_main    = self.df_reg.query(f'`{colname}` == @region_main')['Округ'].iat[0]
+                city_list   = sorted(self.df_reg.query('`Регион` == @region_main')['Город'].unique())
             case 'Город':
                 reg_main    = self.df_reg.query(f'`{colname}` == @city_main')['Округ'].iat[0]
                 region_main = self.df_reg.query(f'`{colname}` == @city_main')['Регион'].iat[0]
+                city_list   = sorted(self.df_reg.query('`Регион` == @region_main')['Город'].unique())
         return {
             'reg_main'      : reg_main,
             'region_main'   : region_main,
             'city_main'     : city_main,
             'reg_list'      : sorted(self.df_reg['Округ'].unique()),
             'region_list'   : sorted(self.df_reg.query('`Округ` == @reg_main')['Регион'].unique()),
-            'city_list'     : sorted(self.df_reg.query('`Регион` == @region_main')['Город'].unique())
+            'city_list'     : city_list
         }
     
     
@@ -129,7 +144,7 @@ class Edit_Row(Base_Class):
         old_row = self.init_table.model().init_data.iloc[sr[0], :]
         
         # Формирование ГРНТИ
-        grntis = sorted((str(self.edit_grnti_lineEdit.text()), str(self.edit_grnti2_lineEdit.text())))
+        grntis = sorted((str(self.edit_grnti_lineEdit.text().rstrip('.')), str(self.edit_grnti2_lineEdit.text().rstrip('.'))))
         str_grntis = ''
         for item in grntis:
             if item:
@@ -175,6 +190,8 @@ class Edit_Row(Base_Class):
     
     
     def before_edit_widget(self):
+        if not self.stackedWidget.currentWidget() == self.page_1:
+            return False
         new_row = self.get_edit_row()
         flags = self.varify_edding_row(new_row)
         if all(flags):

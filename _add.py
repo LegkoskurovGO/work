@@ -13,7 +13,7 @@ class Add_Row(Base_Class):
     
     def __init__(self):
         # Placeholder
-        self.addexpert_name_lineEdit.setPlaceholderText('Введите ФИО эксперта:')
+        self.addexpert_name_lineEdit.setPlaceholderText('Формат: Иванов И.И.')
         self.addexpert_grnti_lineEdit.setPlaceholderText('Формат: 00.00.00')
         self.addexpert_grnti2_lineEdit.setPlaceholderText('Формат: 00.00.00')
         self.addexpert_keywords_lineEdit.setPlaceholderText('Введите ключевые слова через запятую:')
@@ -36,12 +36,13 @@ class Add_Row(Base_Class):
         self.addexpert_reg_comboBox.clear()
         self.addexpert_region_comboBox.clear()
         self.addexpert_city_comboBox.clear()
+
         if comdict is None:
             self.addexpert_reg_comboBox.addItems([''] + sorted(self.df_reg['Округ'].unique()))
             self.addexpert_region_comboBox.addItems([''] + sorted(self.df_reg['Регион'].unique()))
             self.addexpert_city_comboBox.addItems([''] + sorted(self.df_reg['Город'].unique()))
         else:
-            self.addexpert_reg_comboBox.addItems([''] + sorted(comdict['reg_list']))
+            self.addexpert_reg_comboBox.addItems([''] + comdict['reg_list'])
             self.addexpert_region_comboBox.addItems([''] + comdict['region_list'])
             self.addexpert_city_comboBox.addItems([''] + comdict['city_list'])
             
@@ -74,6 +75,8 @@ class Add_Row(Base_Class):
         
         
     def before_add_widget(self):
+        if not self.stackedWidget.currentWidget() == self.page_1:
+            return False
         return self.checkers_add_widget()
     
     
@@ -85,7 +88,7 @@ class Add_Row(Base_Class):
     
     def get_row_add_widget(self) -> pd.DataFrame:
         # Формирование ГРНТИ
-        grntis = sorted((str(self.addexpert_grnti_lineEdit.text()), str(self.addexpert_grnti2_lineEdit.text())))
+        grntis = sorted((str(self.addexpert_grnti_lineEdit.text().rstrip('.')), str(self.addexpert_grnti2_lineEdit.text().rstrip('.'))))
         str_grntis = ''
         for item in grntis:
             if item:
@@ -134,8 +137,10 @@ class Add_Row(Base_Class):
             return not self.settings_dict[self.cur_name]['df'].query(query_string).empty
         def is_empty_filed(row: pd.Series) -> bool:
             return (~row.loc[['ФИО', 'Округ', 'Регион', 'Город', 'ГРНТИ']].astype(bool)).sum()
-        def regex_correct(row: pd.Series) -> bool:
+        def regex_correct_grnti(row: pd.Series) -> bool:
             return not bool(re.match(self.regex_grntis, new_row.at[0, 'ГРНТИ']))
+        def regex_correct_fio(row: pd.Series) -> bool:
+            return not bool(re.match(self.regex_name, new_row.at[0, 'ФИО']))
         
         if is_unique_row(new_row.iloc[0]):
             self.warning_addexpert_label.setText("Такой эксперт уже добавлен")
@@ -152,8 +157,13 @@ class Add_Row(Base_Class):
                 if getattr(self, f'addexpert_{i}_comboBox').currentText() == '':
                     getattr(self, f'addexpert_{i}_comboBox').setStyleSheet("border: 1px solid red;")
             return False
-        if regex_correct(new_row.iloc[0]):
+        if regex_correct_grnti(new_row.iloc[0]):
             self.warning_addexpert_label.setText("Некорректный формат ГРНТИ!")
+            self.warning_addexpert_label.setHidden(False)
+            QTimer.singleShot(5000, lambda: self.warning_addexpert_label.setHidden(True))
+            return False
+        if regex_correct_fio(new_row.iloc[0]):
+            self.warning_addexpert_label.setText("Некорректный формат ФИО!")
             self.warning_addexpert_label.setHidden(False)
             QTimer.singleShot(5000, lambda: self.warning_addexpert_label.setHidden(True))
             return False

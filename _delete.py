@@ -9,6 +9,8 @@ class Delete_rows(Base_Class):
         self.warning_delete_label.setHidden(True)
     
     def before_delete_widget(self):
+        if not self.stackedWidget.currentWidget() == self.page_1:
+            return False
         if len(Edit_Row.rows_selected(self)) > 0:
             self.warning_delete_label.setHidden(True)
             return True

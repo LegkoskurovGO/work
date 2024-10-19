@@ -37,10 +37,10 @@ pd.set_option('future.no_silent_downcasting', True)
 # - просмотр записей выбранной группы кандидатов на включение в состав экспертной группы
 # с возможностью простановки/снятия отметок о принятии решения о включении кандидата в экспертную группу;
 # фиксация результата в экспертной группе;
-
+# Done
 # - просмотр записей исходной базы данных с возможностью простановки отметок об отборе эксперта в качестве кандидата на включение/добавление в экспертную группу,
 # перенос сведений об отобранных кандидатах в выбранную экспертную группу;
-
+# Done
 # - утверждение экспертной группы без возможности дальнейшей корректировки состава с увеличением на 1 числа участий в экспертизах в основной базе данных;
 
 # - формирование документов: таблица со списком сформированной поименованной экспертной группы,
@@ -71,34 +71,45 @@ class Ui_MainWindow2(Edit_Row, Add_Row, Table_Methods, Filter_table, Delete_rows
         Edit_Row.__init__(self)
         # Подготовка к Сотрировке
         Table_Methods.__init__(self)
+        # Подготовка к Сотрировке
+        Experts.__init__(self)
         
         # Отображение "Эксперты НТП"
         self.show_table('ntp')
-        
-        from PyQt6.QtGui import QShortcut, QKeySequence
-        QShortcut(QKeySequence('Ctrl+4'), self).activated.connect(self.groups_show)
    
     def open_dialog(self, string):
         func_before = {
             'add'   : self.before_add_widget,
             'edit'  : self.before_edit_widget,
             'delete': self.before_delete_widget,
-            'new_group' : self.before_group_widget
-            # 'choose_group' : self.before_group_widget 
+            'new_group' : self.before_group_widget,
+            'choose_group' : lambda: True,
+            'merge_group' : lambda: True,
+            # 'approve_group' : lambda: True,
+            'delete_group' : self.before_delete_expert_part_widget,
+            'delete_group_part' : self.before_delete_expert_widget
         }
         dialog_ui = {
             'add'   : Ui_Dialog_confirm,
             'edit'  : Ui_Dialog_confirm,
             'delete': Ui_Dialog_confirm,
-            'new_group' : Ui_Dialog_lineEdit
-            # 'choose_group' : Ui_Dialog_comboBox 
+            'new_group' : Ui_Dialog_lineEdit,
+            'merge_group' : Ui_Dialog_comboBox,
+            # 'approve_group' : Ui_Dialog_confirm,
+            'choose_group' : Ui_Dialog_comboBox,
+            'delete_group' : Ui_Dialog_confirm,
+            'delete_group_part' : Ui_Dialog_confirm
         }
         func_after = {
             'add'   : self.apply_add_widget,
             'edit'  : self.apply_edit_widget,
             'delete': self.apply_delete_widget,
-            'new_group' : self.save_group_widget
-            # 'choose_group' : self.load_group_widget 
+            'new_group' : self.save_group_widget,
+            'merge_group' : self.merge_group_widget,
+            # 'approve_group' : self.approve_group_widget,
+            'choose_group' : self.groups_show,
+            'delete_group' : self.apply_delete_expert_widget,
+            'delete_group_part' : self.apply_delete_expert_part_widget 
         }
         if not func_before[string]():
             return
