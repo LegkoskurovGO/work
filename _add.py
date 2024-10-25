@@ -22,6 +22,7 @@ class Add_Row(Base_Class):
         self.addexpert_grnti_lineEdit.setValidator(self.validator_grnti)
         self.addexpert_grnti2_lineEdit.setValidator(self.validator_grnti)
         self.addexpert_keywords_lineEdit.setValidator(self.validator_multi)
+        self.addexpert_city_comboBox.setEditable(True)
         # Заполнение CheckBox
         self.connect_on_off_add(True)
         self.fill_add_checkBox()
@@ -53,20 +54,20 @@ class Add_Row(Base_Class):
         self.connect_on_off_add(True)
     
     
-    def update_add_cB(self, colname: str, colvalue: str):
-        dict_cB = Edit_Row.get_less_list(self, colname, colvalue)
+    def update_add_cB(self, colname: str, widget_: str):
+        dict_cB = Edit_Row.get_less_list(self, colname, widget_)
         self.fill_add_checkBox(dict_cB)
     
     
     def connect_on_off_add(self, flag: bool = True):
         if flag:
-            self.addexpert_reg_comboBox.currentTextChanged.connect(lambda x: self.update_add_cB('Округ', x))
-            self.addexpert_region_comboBox.currentTextChanged.connect(lambda x: self.update_add_cB('Регион', x))
-            self.addexpert_city_comboBox.currentTextChanged.connect(lambda x: self.update_add_cB('Город', x))
+            self.addexpert_reg_comboBox.currentIndexChanged.connect(lambda: self.update_add_cB('Округ', 'addexpert_reg_comboBox'))
+            self.addexpert_region_comboBox.currentIndexChanged.connect(lambda: self.update_add_cB('Регион', 'addexpert_region_comboBox'))
+            self.addexpert_city_comboBox.currentIndexChanged.connect(lambda: self.update_add_cB('Город', 'addexpert_city_comboBox'))
         else:
-            self.addexpert_reg_comboBox.currentTextChanged.disconnect()
-            self.addexpert_region_comboBox.currentTextChanged.disconnect()
-            self.addexpert_city_comboBox.currentTextChanged.disconnect()
+            self.addexpert_reg_comboBox.currentIndexChanged.disconnect()
+            self.addexpert_region_comboBox.currentIndexChanged.disconnect()
+            self.addexpert_city_comboBox.currentIndexChanged.disconnect()
     
         
     def apply_add_widget(self) -> None:
@@ -123,6 +124,11 @@ class Add_Row(Base_Class):
         self.df_ntp = pd.concat([self.df_ntp, row], ignore_index=True)
         self.df_ntp = self.df_ntp.astype(self.df_ntp.dtypes)
         self.init_table.setModel(pandasModel(self.settings_dict[self.cur_name]['df']))
+        
+        if self.df_reg[self.df_reg['Город'] == row["Город"].at[0]].empty:
+            self.df_reg = pd.concat([self.df_reg, row[['Округ', 'Регион', 'Город']]], ignore_index=True)
+            self.settings_dict['reg']['df'] = self.df_reg
+        
         self.init_table.scrollToBottom()
         self.init_table.selectRow(self.settings_dict[self.cur_name]['df'].index.max())
         self.reset_add_widget()
@@ -172,13 +178,13 @@ class Add_Row(Base_Class):
 
 
     def reset_style_addexpert(self) -> None:            
-        self.addexpert_name_lineEdit.setStyleSheet("")
-        self.addexpert_reg_comboBox.setStyleSheet("")
-        self.addexpert_region_comboBox.setStyleSheet("")
-        self.addexpert_city_comboBox.setStyleSheet("")
-        self.addexpert_grnti_lineEdit.setStyleSheet("")
-        self.addexpert_grnti2_lineEdit.setStyleSheet("")
-        self.addexpert_keywords_lineEdit.setStyleSheet("")    
+        self.addexpert_name_lineEdit.setStyleSheet("background-color: rgb(228,238,255);")
+        self.addexpert_reg_comboBox.setStyleSheet("background-color: rgb(228,238,255);")
+        self.addexpert_region_comboBox.setStyleSheet("background-color: rgb(228,238,255);")
+        self.addexpert_city_comboBox.setStyleSheet("background-color: rgb(228,238,255);")
+        self.addexpert_grnti_lineEdit.setStyleSheet("background-color: rgb(228,238,255);")
+        self.addexpert_grnti2_lineEdit.setStyleSheet("background-color: rgb(228,238,255);")
+        self.addexpert_keywords_lineEdit.setStyleSheet("background-color: rgb(228,238,255);")    
         
         
     def reset_add_widget(self) -> None:

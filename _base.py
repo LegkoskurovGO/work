@@ -36,6 +36,12 @@ class pandasModel(QAbstractTableModel):
             return self._data.columns[col]
         return None
 
+class Ui_plug:
+    def __init__(self, string):
+        a = string
+    def exec(self):
+        return 1
+
 
 class Ui_Dialog_confirm(QDialog, Ui_Confirm):
     def __init__(self, string):

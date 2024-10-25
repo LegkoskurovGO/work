@@ -7,7 +7,7 @@ for name in ('exit', 'Dialog_confirm', 'Dialog_comboBox', 'Dialog_lineEdit'):
 
 from _add import Add_Row
 from _edit import Edit_Row
-from _base import Base_Class, Ui_Dialog_confirm, Ui_Dialog_lineEdit, Ui_Dialog_comboBox
+from _base import Base_Class, Ui_Dialog_confirm, Ui_Dialog_lineEdit, Ui_Dialog_comboBox, Ui_plug
 from _table import Table_Methods
 from _filter import Filter_table
 from _delete import Delete_rows
@@ -90,8 +90,8 @@ class Ui_MainWindow2(Edit_Row, Add_Row, Table_Methods, Filter_table, Delete_rows
             'delete_group_part' : self.before_delete_expert_widget
         }
         dialog_ui = {
-            'add'   : Ui_Dialog_confirm,
-            'edit'  : Ui_Dialog_confirm,
+            'add'   : Ui_plug,
+            'edit'  : Ui_plug,
             'delete': Ui_Dialog_confirm,
             'new_group' : Ui_Dialog_lineEdit,
             'merge_group' : Ui_Dialog_comboBox,

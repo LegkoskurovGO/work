@@ -134,6 +134,7 @@ class Experts(Base_Class):
         elif self.stackedWidget.currentWidget() == self.page:
             df = self.work_table.model().init_data
             self.save_dataframe_with_names(df, group_name)
+        self.table_name_label.setText(group_name)
             
     
     def save_selected_rows(self, group_name: str):
@@ -164,6 +165,15 @@ class Experts(Base_Class):
                 for line in f:
                     file_numbers.append(int(os.path.split(line.split(',')[0])[1].split('group')[1].split('.')[0]))
         next_number = max(file_numbers) + 1 if file_numbers else 1
+        
+        # # Определение наличие дубликатов
+        # flag = True
+        # if os.path.exists(file_path):
+        #     with open(file_path, "r", encoding="utf-8") as f:
+        #         for line in f:
+        #             if group_name == ','.join(line.split(',')[1:]).strip():
+        #                 flag = False
+        # if not flag: return False
 
         # Формирование имени файла
         file_name = os.path.join('.', 'groups', f"group{next_number}.csv")
@@ -263,7 +273,7 @@ class Experts(Base_Class):
         df_old = self.work_table.model().init_data
         df = pd.concat([df_old, df_new], ignore_index=True).drop_duplicates(subset=['Номер'], keep='last')
         df = df.sort_values(by='Номер', axis=0, ascending=True)
-        print(df)
+
         group_name = f'{group_name_old}+{group_name_new}'
         
         self.save_dataframe_with_names(df, group_name)

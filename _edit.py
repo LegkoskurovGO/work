@@ -19,6 +19,7 @@ class Edit_Row(Base_Class):
         self.edit_grnti_lineEdit.setValidator(self.validator_grnti)
         self.edit_grnti2_lineEdit.setValidator(self.validator_grnti)
         self.edit_keywords_lineEdit.setValidator(self.validator_multi)
+        self.edit_city_comboBox.setEditable(True)
         # Предупреждения
         self.warning_edit_label.setHidden(True)
         self.warning_editwidget_label.setHidden(True)
@@ -40,7 +41,8 @@ class Edit_Row(Base_Class):
             self.warning_edit_label.setHidden(True)
             old_row = self.init_table.model().init_data.iloc[sr[0], :].fillna('')
             self.init_table.setSelectionMode(QTableView.SelectionMode.NoSelection)
-            self.update_edit_cB('Город', old_row['Город'])
+            self.edit_city_comboBox.setCurrentText(old_row['Город'])
+            self.update_edit_cB('Город', 'edit_city_comboBox')
             self.fill_edit_widget(old_row)
             self.edit_widget.setHidden(hide)
 
@@ -87,7 +89,9 @@ class Edit_Row(Base_Class):
         self.connect_on_off_edit(True)
     
     
-    def get_less_list(self, colname: str, colvalue: str) -> dict:
+    def get_less_list(self, colname: str, widget_: str) -> dict:
+        colvalue = getattr(self, widget_).currentText()
+        
         reg_main    = colvalue if colname == 'Округ' else ''
         region_main = colvalue if colname == 'Регион' else ''
         city_main   = colvalue if colname == 'Город' else ''
@@ -122,20 +126,20 @@ class Edit_Row(Base_Class):
         }
     
     
-    def update_edit_cB(self, colname: str, colvalue: str):
-        dict_cB = self.get_less_list(colname, colvalue)
+    def update_edit_cB(self, colname: str, widget_: str):
+        dict_cB = self.get_less_list(colname, widget_)
         self.fill_edit_checkBox(dict_cB)
     
     
     def connect_on_off_edit(self, flag: bool = True):
         if flag:
-            self.edit_reg_comboBox.currentTextChanged.connect(lambda x: self.update_edit_cB('Округ', x))
-            self.edit_region_comboBox.currentTextChanged.connect(lambda x: self.update_edit_cB('Регион', x))
-            self.edit_city_comboBox.currentTextChanged.connect(lambda x: self.update_edit_cB('Город', x))
+            self.edit_reg_comboBox.currentIndexChanged.connect(lambda: self.update_edit_cB('Округ', 'edit_reg_comboBox'))
+            self.edit_region_comboBox.currentIndexChanged.connect(lambda: self.update_edit_cB('Регион', 'edit_region_comboBox'))
+            self.edit_city_comboBox.currentIndexChanged.connect(lambda: self.update_edit_cB('Город', 'edit_city_comboBox'))
         else:
-            self.edit_reg_comboBox.currentTextChanged.disconnect()
-            self.edit_region_comboBox.currentTextChanged.disconnect()
-            self.edit_city_comboBox.currentTextChanged.disconnect()
+            self.edit_reg_comboBox.currentIndexChanged.disconnect()
+            self.edit_region_comboBox.currentIndexChanged.disconnect()
+            self.edit_city_comboBox.currentIndexChanged.disconnect()
     
     
     def get_edit_row(self):
@@ -182,6 +186,12 @@ class Edit_Row(Base_Class):
         self.init_table.setModel(pandasModel(self.init_table.model().init_data))
         self.edit_widget.setHidden(True)
         self.init_table.setSelectionMode(self.settings_dict[self.cur_name]['mode'])
+                
+        new_row = new_row.to_frame().T
+        if self.df_reg[self.df_reg['Город'] == new_row["Город"].at[0]].empty:
+            self.df_reg = pd.concat([self.df_reg, new_row[['Округ', 'Регион', 'Город']]], ignore_index=True)
+            self.settings_dict['reg']['df'] = self.df_reg
+        
 
 
     
