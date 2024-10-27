@@ -6,7 +6,8 @@ for name in ('exit', 'Dialog_confirm', 'Dialog_comboBox', 'Dialog_lineEdit'):
             case _: subprocess.run(f'python -m PyQt6.uic.pyuic -o {name}.py -x {name}.ui'.split())    
 
 # Удаляяем папку с группами при запуске программы
-shutil.rmtree(os.path.join('.', 'groups'))
+if os.path.isdir(os.path.join('.', 'groups')):
+    shutil.rmtree(os.path.join('.', 'groups'))
 
 from utils._add import Add_Row
 from utils._edit import Edit_Row
@@ -62,8 +63,8 @@ class Ui_MainWindow2(Edit_Row, Add_Row, Table_Methods, Filter_table, Delete_rows
             'new_group' : self.before_group_widget,
             'choose_group' : lambda: True,
             'merge_group' : lambda: True,
-            'delete_group' : self.before_delete_expert_part_widget,
-            'delete_group_part' : self.before_delete_expert_widget
+            'delete_group' : self.before_delete_expert_widget,
+            'delete_group_part' : self.before_delete_expert_part_widget
         }
         dialog_ui = {
             'add'   : Ui_plug,

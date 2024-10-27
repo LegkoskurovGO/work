@@ -57,6 +57,39 @@ class Ui_Dialog_confirm(QDialog, Ui_Confirm):
         self.cancel_button.clicked.connect(self.reject)
         self.confirm_button.setShortcut('enter')
         self.cancel_button.setShortcut('escape')
+        
+        settings = QSettings("MyCompany", "MyApp")
+        sr = settings.value('string_to_delete')
+        self.label_2.setText(self.insert_newline(self.combine_ranges(sr)))
+    def insert_newline(self, text: list[str], max_chars=100) -> str:
+        words = text  # Разбиваем строку на слова
+        result = []
+        current_line = []
+        current_length = 0
+        for word in words:
+            if current_length + len(word) + len(', ') <= max_chars:
+                current_line.append(word)
+                current_length += len(word) + len(', ')
+            else:
+                result.append(', '.join(current_line))
+                current_line = [word]
+                current_length = len(word) + len(', ')
+        if current_line:
+            result.append(', '.join(current_line))
+        return ',\n'.join(result)
+    def combine_ranges(self, numbers: list[int]):
+        ranges = []
+        start = numbers[0]
+        end = start
+        for i in range(1, len(numbers)):
+            if numbers[i] == end + 1:
+                end = numbers[i]
+            else:
+                ranges.append(str(start) if start == end else f"{start}-{end}")
+                start = numbers[i]
+                end = start
+        ranges.append(str(start) if start == end else f"{start}-{end}")
+        return ranges
 
 
 class Ui_Dialog_lineEdit(QDialog, Ui_lineEdit):
@@ -109,6 +142,7 @@ class Ui_Dialog_comboBox(QDialog, Ui_comboBox):
         self.cancel_button.clicked.connect(self.reject)
         self.confirm_button.setShortcut('enter')
         self.cancel_button.setShortcut('escape')
+        self.choose_comboBox.currentTextChanged.connect(self.show_picked_group)
         
         self.choose_comboBox.clear()
         self.choose_comboBox.addItems([''] + self.list_of_groups())
@@ -126,6 +160,22 @@ class Ui_Dialog_comboBox(QDialog, Ui_comboBox):
             with open(file_path, "r", encoding="utf-8") as f:
                 name_group_list = [','.join(line.split(',')[1:]).strip() for line in f]
         return name_group_list
+    def show_picked_group(self, group_name: str):
+        file_path = os.path.join('.', 'groups', 'names.txt')
+        if os.path.exists(file_path):
+            with open(file_path, "r", encoding="utf-8") as f:
+                for line in f:
+                    if group_name == ','.join(line.split(',')[1:]).strip():
+                        file_name = line.split(',')[0]
+                        break
+        params = {'dtype': { 'kod': 'int16', 'take_part': 'int8'}, 'parse_dates': [9], 'date_format': '%d-%b-%y'}
+        df = pd.read_csv(file_name, **params).sort_values(by='Номер', axis=0, ascending=True)
+        self.init_table.setModel(pandasModel(df))
+        self.init_table.resizeColumnsToContents()
+        # Укорачивание столбца Расшифровка
+        for id, col in enumerate(self.init_table.model().init_data.columns):
+            if col == 'Расшифровка':
+                self.init_table.setColumnWidth(id, 487); break
 
 
 
@@ -167,6 +217,8 @@ class Base_Class(QMainWindow, Ui_MainWindow):
         self.add_widget.setHidden(btns)
         self.ramka1.setHidden(btns)
         self.ramka2.setHidden(btns)
+        self.ramka3.setHidden(btns)
+        self.filterlist_name.setHidden(True)
             
 
     def load_data(self, dir_name: str) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
@@ -219,6 +271,8 @@ class Base_Class(QMainWindow, Ui_MainWindow):
         self.edit_button.clicked.connect(lambda: self.show_edit_widget(False))
         self.add_expert_button.clicked.connect(lambda: self.open_dialog('new_group'))
         self.filter_button.clicked.connect(lambda: self.show_filter_widget(False))
+        self.filter_button_2.clicked.connect(lambda: self.select_all_rows(True))
+        self.filter_button_3.clicked.connect(lambda: self.select_all_rows(False))
         # Фильтр
         self.filter_close_button.clicked.connect(lambda: self.show_filter_widget(True))
         self.filter_apply_button.clicked.connect(self.apply_filter_widget)
@@ -232,7 +286,7 @@ class Base_Class(QMainWindow, Ui_MainWindow):
         self.edit_apply_button.clicked.connect(lambda: self.open_dialog('edit'))
         self.edit_reset_button.clicked.connect(lambda: self.show_edit_widget(False))
         # Помощь
-        self.help_close_button.clicked.connect(lambda: self.help_widget.setHidden(True))
+        self.help_close_button_3.clicked.connect(lambda: self.help_widget.setHidden(True))
         # Работа с экспертными группами
         self.edit_group_button.clicked.connect(lambda: self.open_dialog('delete_group_part'))
         self.approve_group_button.clicked.connect(self.approve_group_final)

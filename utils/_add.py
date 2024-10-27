@@ -25,14 +25,14 @@ class Add_Row(Base_Class):
         self.addexpert_city_comboBox.setEditable(True)
         # Заполнение CheckBox
         self.connect_on_off_add(True)
-        self.fill_add_checkBox()
+        self.fill_add_comboBox()
         # Скрыть ошибку
         self.warning_addexpert_label.setHidden(True)
         self.addexpert_grnti_lineEdit.textChanged.connect(lambda x: Edit_Row.grnti_number_compliter(self, x, 'addexpert_grnti_lineEdit'))
         self.addexpert_grnti2_lineEdit.textChanged.connect(lambda x: Edit_Row.grnti_number_compliter(self, x, 'addexpert_grnti2_lineEdit'))
         
     
-    def fill_add_checkBox(self, comdict: dict | None = None):
+    def fill_add_comboBox(self, comdict: dict | None = None):
         # Временно отключаем сигнал currentIndexChanged
         self.connect_on_off_add(False)
         
@@ -58,7 +58,7 @@ class Add_Row(Base_Class):
     
     def update_add_cB(self, colname: str, widget_: str):
         dict_cB = Edit_Row.get_less_list(self, colname, widget_)
-        self.fill_add_checkBox(dict_cB)
+        self.fill_add_comboBox(dict_cB)
     
     
     def connect_on_off_add(self, flag: bool = True):

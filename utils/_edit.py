@@ -62,7 +62,7 @@ class Edit_Row(Base_Class):
             self.edit_widget.setHidden(hide)
 
 
-    def fill_edit_checkBox(self, comdict: dict | None = None):
+    def fill_edit_comboBox(self, comdict: dict | None = None):
         # Временно отключаем сигнал currentIndexChanged
         self.connect_on_off_edit(False)
         
@@ -143,7 +143,7 @@ class Edit_Row(Base_Class):
     
     def update_edit_cB(self, colname: str, widget_: str):
         dict_cB = self.get_less_list(colname, widget_)
-        self.fill_edit_checkBox(dict_cB)
+        self.fill_edit_comboBox(dict_cB)
     
     
     def connect_on_off_edit(self, flag: bool = True):

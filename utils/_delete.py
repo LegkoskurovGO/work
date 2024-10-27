@@ -1,7 +1,7 @@
 from utils._base import Base_Class, pandasModel
 from utils._edit import Edit_Row
 
-from PyQt6.QtCore import QTimer
+from PyQt6.QtCore import QTimer, QSettings
 
 class Delete_rows(Base_Class):
     
@@ -11,8 +11,10 @@ class Delete_rows(Base_Class):
     def before_delete_widget(self):
         if not self.stackedWidget.currentWidget() == self.page_1:
             return False
-        if len(Edit_Row.rows_selected(self)) > 0:
+        if len(sr := Edit_Row.rows_selected(self)) > 0:
             self.warning_delete_label.setHidden(True)
+            settings = QSettings("MyCompany", "MyApp")
+            settings.setValue("string_to_delete", sr) # Сохраняем значение
             return True
         else: 
             self.warning_delete_label.setHidden(False)

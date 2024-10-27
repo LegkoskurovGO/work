@@ -38,7 +38,7 @@ class Experts(Base_Class):
         # Укорачивание столбца Расшифровка
         for id, col in enumerate(self.work_table.model().init_data.columns):
             if col == 'Расшифровка':
-                self.work_table.setColumnWidth(id, 500); break
+                self.work_table.setColumnWidth(id, 487); break
         self.setup_check_table(df)
         self.check_table.verticalScrollBar().valueChanged.connect(self.sync_scroll)
         self.work_table.verticalScrollBar().valueChanged.connect(self.sync_scroll)
@@ -75,7 +75,7 @@ class Experts(Base_Class):
             self.check_table.setCellWidget(row, 0, checkbox)
             self.check_table.setContentsMargins(0,0,0,0)
         self.check_table.resizeColumnsToContents()
-        self.check_table.setGeometry(QtCore.QRect(1095, 70, 82, 620))
+        self.check_table.setGeometry(QtCore.QRect(1095, 80, 82, 620))
         self.check_table.setSelectionMode(QTableView.SelectionMode.NoSelection)
         self.check_table.horizontalHeader().sectionClicked.connect(self.on_header_clicked)
         # self.check_table.setSelectionBehavior(QTableView.SelectionBehavior.SelectRows)
@@ -193,10 +193,14 @@ class Experts(Base_Class):
         return list(set(i.row() for i in self.work_table.selectedIndexes()))
     
     
-    def before_delete_expert_widget(self):
+    def before_delete_expert_part_widget(self):
         if not self.stackedWidget.currentWidget() == self.page:
             return False
-        if len(self.rows_selected_expert()) > 0:
+        if len(sr := self.rows_selected_expert()) > 0:
+            rows = self.work_table.model().init_data.iloc[sr, :]
+            ids = sorted(rows['Номер'])
+            settings = QSettings("MyCompany", "MyApp")
+            settings.setValue("string_to_delete", ids) # Сохраняем значение
             # self.warning_delete_label.setHidden(True)
             return True
         else: 
@@ -205,7 +209,7 @@ class Experts(Base_Class):
             return False
     
     
-    def before_delete_expert_part_widget(self):
+    def before_delete_expert_widget(self):
         if not self.stackedWidget.currentWidget() == self.page:
             return False
         else: 
