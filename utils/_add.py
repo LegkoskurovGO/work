@@ -1,5 +1,5 @@
-from _base import Base_Class, pandasModel
-from _edit import Edit_Row
+from utils._base import Base_Class, pandasModel
+from utils._edit import Edit_Row
 
 from PyQt6.QtCore import QTimer
 
@@ -28,6 +28,8 @@ class Add_Row(Base_Class):
         self.fill_add_checkBox()
         # Скрыть ошибку
         self.warning_addexpert_label.setHidden(True)
+        self.addexpert_grnti_lineEdit.textChanged.connect(lambda x: Edit_Row.grnti_number_compliter(self, x, 'addexpert_grnti_lineEdit'))
+        self.addexpert_grnti2_lineEdit.textChanged.connect(lambda x: Edit_Row.grnti_number_compliter(self, x, 'addexpert_grnti2_lineEdit'))
         
     
     def fill_add_checkBox(self, comdict: dict | None = None):
@@ -140,7 +142,7 @@ class Add_Row(Base_Class):
         
         def is_unique_row(row: pd.Series) -> bool:
             query_string = r'`ФИО` == @row["ФИО"] and `Город` == @row["Город"] and `ГРНТИ` == @row["ГРНТИ"]'
-            return not self.settings_dict[self.cur_name]['df'].query(query_string).empty
+            return not self.df_ntp.query(query_string).empty
         def is_empty_filed(row: pd.Series) -> bool:
             return (~row.loc[['ФИО', 'Округ', 'Регион', 'Город', 'ГРНТИ']].astype(bool)).sum()
         def regex_correct_grnti(row: pd.Series) -> bool:

@@ -1,5 +1,5 @@
-from _base import Base_Class, pandasModel
-from _edit import Edit_Row
+from utils._base import Base_Class, pandasModel
+from utils._edit import Edit_Row
 
 from PyQt6.QtCore import QTimer
 

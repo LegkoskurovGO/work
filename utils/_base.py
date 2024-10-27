@@ -37,10 +37,8 @@ class pandasModel(QAbstractTableModel):
         return None
 
 class Ui_plug:
-    def __init__(self, string):
-        a = string
-    def exec(self):
-        return 1
+    def __init__(self, string): a = string
+    def exec(self): return 1
 
 
 class Ui_Dialog_confirm(QDialog, Ui_Confirm):
@@ -74,13 +72,33 @@ class Ui_Dialog_lineEdit(QDialog, Ui_lineEdit):
         self.cancel_button.clicked.connect(self.reject)
         self.confirm_button.setShortcut('enter')
         self.cancel_button.setShortcut('escape')
-
-        # Подключаем сигнал rejected к слоту
+        
+        self.flag = True
+        self.style_ = """background-color: rgb(228, 238, 255);font: 12pt "Bahnschrift";border-color: rgb(67, 78, 91);"""
+        self.name_lineEdit.setStyleSheet(self.style_)
         self.accepted.connect(self.on_close)
+        self.name_lineEdit.textChanged.connect(self.check_name)
     def on_close(self):
         # Читаем значения из объектов диалога
         settings = QSettings("MyCompany", "MyApp")
         settings.setValue("name_lineEdit", self.name_lineEdit.text()) # Сохраняем значение
+    def check_name(self, group_name):
+        # Определение наличие дубликатов
+        self.flag_new = True 
+        file_path = os.path.join('.', 'groups', 'names.txt')
+        if os.path.exists(file_path):
+            with open(file_path, "r", encoding="utf-8") as f:
+                for line in f:
+                    if group_name.strip() == ','.join(line.split(',')[1:]).strip():
+                        self.flag_new = False           
+        if not self.flag and self.flag_new:
+            self.confirm_button.clicked.connect(self.accept)
+            self.name_lineEdit.setStyleSheet(self.style_)
+            self.flag = True
+        elif self.flag and not self.flag_new:
+            self.confirm_button.clicked.disconnect()
+            self.name_lineEdit.setStyleSheet(self.style_ + 'border: 1px solid red;') 
+            self.flag = False
 
 
 class Ui_Dialog_comboBox(QDialog, Ui_comboBox):
@@ -217,7 +235,7 @@ class Base_Class(QMainWindow, Ui_MainWindow):
         self.help_close_button.clicked.connect(lambda: self.help_widget.setHidden(True))
         # Работа с экспертными группами
         self.edit_group_button.clicked.connect(lambda: self.open_dialog('delete_group_part'))
-        # self.approve_group_button.clicked.connect(lambda: self.open_dialog('approve_group'))
+        self.approve_group_button.clicked.connect(self.approve_group_final)
         self.add_group_button.clicked.connect(lambda: self.open_dialog('merge_group'))
         
     
@@ -255,19 +273,19 @@ class Base_Class(QMainWindow, Ui_MainWindow):
     def get_settings(self) -> dict:
         return  {
             'ntp': {
-                'df': self.df_ntp.copy(),
+                'df': self.df_ntp,
                 'mode': QTableView.SelectionMode.ExtendedSelection,
                 'behave': QTableView.SelectionBehavior.SelectRows,
                 'label': 'Эксперты НТП'
             },
             'reg': {
-                'df': self.df_reg.copy(),
+                'df': self.df_reg,
                 'mode': QTableView.SelectionMode.ExtendedSelection,
                 'behave': QTableView.SelectionBehavior.SelectItems,
                 'label': 'Справочник по регионам'
             },
             'grnti': {
-                'df': self.df_grnti.copy(),
+                'df': self.df_grnti,
                 'mode': QTableView.SelectionMode.ExtendedSelection,
                 'behave': QTableView.SelectionBehavior.SelectItems,
                 'label': 'Код рубрики (ГРНТИ)'
@@ -277,5 +295,5 @@ class Base_Class(QMainWindow, Ui_MainWindow):
 
     # def save_abc(self):
     #     self.df_ntp.to_csv('./data2/Expert.csv', index=False, encoding="utf-8", date_format='%d-%b-%y')
-    #     self.df_reg.to_csv('./data2/Reg_obl_city.csv', index=False, encoding="utf-8", date_format='%d-%b-%y')
-    #     self.df_grnti.to_csv('./data2/grntirub.csv', index=False, encoding="utf-8", date_format='%d-%b-%y')
+    #     self.df_reg.to_csv('./data2/russian_cities.csv', index=False, encoding="utf-8", date_format='%d-%b-%y')
+    #     self.df_grnti.to_csv('./data2/grnti-latest.csv', index=False, encoding="utf-8", date_format='%d-%b-%y')

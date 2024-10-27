@@ -1,5 +1,5 @@
-from _base import Base_Class, pandasModel, Ui_Dialog_lineEdit
-from _edit import Edit_Row
+from utils._base import Base_Class, pandasModel
+from utils._edit import Edit_Row
 
 from PyQt6.QtCore import QSettings
 from PyQt6.QtWidgets import QTableView
@@ -31,8 +31,6 @@ class Experts(Base_Class):
     
     
     def show_group_table(self, file_name: str, group_name: str) -> None:
-        file_path = os.path.join('.', 'groups', 'names.txt')
-
         df = self.load_groups(file_name)
         self.work_table.setModel(pandasModel(df))
         self.table_name_label.setText(group_name)
@@ -79,15 +77,17 @@ class Experts(Base_Class):
         self.check_table.resizeColumnsToContents()
         self.check_table.setGeometry(QtCore.QRect(1095, 70, 82, 620))
         self.check_table.setSelectionMode(QTableView.SelectionMode.NoSelection)
+        self.check_table.horizontalHeader().sectionClicked.connect(self.on_header_clicked)
         # self.check_table.setSelectionBehavior(QTableView.SelectionBehavior.SelectRows)
         
-        
-    def checkbox_state_changed(self, state, row):
-        item = self.check_table.item(row, 0)
-        if state == QtCore.Qt.CheckState.Checked:
-            item.setData(QtCore.Qt.ItemDataRole.CheckStateRole, QtCore.Qt.CheckState.Checked)
-        else:
-            item.setData(QtCore.Qt.ItemDataRole.CheckStateRole, QtCore.Qt.CheckState.Unchecked)
+    def on_header_clicked(self, *args):
+        """Обработчик клика на заголовок столбца."""
+        # Получаем все QCheckBox из таблицы
+        checkboxes = [self.check_table.cellWidget(row, 0) for row in range(self.check_table.rowCount())]
+        # Проверяем, проставлен ли флажок на всех QCheckBox
+        all_checked = all(checkbox.isChecked() for checkbox in checkboxes)
+        # Если все флажки проставлены, то снимаем их, иначе проставляем
+        for checkbox in checkboxes: checkbox.setChecked(not all_checked)
     
     def sync_scroll(self, value):
         self.check_table.verticalScrollBar().setValue(value)
@@ -130,27 +130,24 @@ class Experts(Base_Class):
         group_name = settings.value("name_lineEdit")
 
         if self.stackedWidget.currentWidget() == self.page_1:
-            self.save_selected_rows(group_name)
+            sr = Edit_Row.rows_selected(self)
+            rows = self.init_table.model().init_data.iloc[sr, :]
         elif self.stackedWidget.currentWidget() == self.page:
-            df = self.work_table.model().init_data
-            self.save_dataframe_with_names(df, group_name)
-        self.table_name_label.setText(group_name)
-            
-    
-    def save_selected_rows(self, group_name: str):
-        sr = Edit_Row.rows_selected(self)
-        rows = self.init_table.model().init_data.iloc[sr, :]
-        
-        if self.approve_save(group_name):
-            self.save_dataframe_with_names(rows, group_name)
-    
-    
-    def approve_save(self, group_name) -> bool:
-        if self.dict_of_groups().get(group_name, False):
-            return False
+            rows = self.work_table.model().init_data
+            self.erase_group()
         else:
-            return True
-            
+            return
+        self.save_dataframe_with_names(rows, group_name)
+        self.table_name_label.setText(group_name)
+    
+    
+    def save_or_new_group(self):
+        match self.stackedWidget.currentWidget():
+            case self.page:
+                return 'save_group'
+            case self.page_1 | _:
+                return 'new_group'
+    
 
     def save_dataframe_with_names(self, df: pd.DataFrame, group_name: str):
         if not os.path.isdir(os.path.join('.', 'groups')):
@@ -165,15 +162,6 @@ class Experts(Base_Class):
                 for line in f:
                     file_numbers.append(int(os.path.split(line.split(',')[0])[1].split('group')[1].split('.')[0]))
         next_number = max(file_numbers) + 1 if file_numbers else 1
-        
-        # # Определение наличие дубликатов
-        # flag = True
-        # if os.path.exists(file_path):
-        #     with open(file_path, "r", encoding="utf-8") as f:
-        #         for line in f:
-        #             if group_name == ','.join(line.split(',')[1:]).strip():
-        #                 flag = False
-        # if not flag: return False
 
         # Формирование имени файла
         file_name = os.path.join('.', 'groups', f"group{next_number}.csv")
@@ -186,6 +174,17 @@ class Experts(Base_Class):
         with open(file_path, "a", encoding="utf-8") as f:
             f.write(f"{file_name},{group_name}\n")
 
+
+    def dublicate_check(self, group_name):
+        file_path = os.path.join('.', 'groups', 'names.txt')
+        # Определение наличие дубликатов
+        flag = True
+        if os.path.exists(file_path):
+            with open(file_path, "r", encoding="utf-8") as f:
+                for line in f:
+                    if group_name.strip() == ','.join(line.split(',')[1:]).strip():
+                        flag = False
+        return flag
 
     # -------------------- Удаление --------------------
     
@@ -266,7 +265,7 @@ class Experts(Base_Class):
     def merge_group_widget(self):
         settings = QSettings("MyCompany", "MyApp")
         group_name_new = settings.value("choose_comboBox") # Читаем значение
-        file_name_new = self.dict_of_groups().get(group_name_new, False)
+        file_name_new = self.dict_of_groups().get(group_name_new)
         df_new = self.load_groups(file_name_new)
         
         group_name_old = self.table_name_label.text()
@@ -276,6 +275,34 @@ class Experts(Base_Class):
 
         group_name = f'{group_name_old}+{group_name_new}'
         
+        self.table_name_label.setText(group_name)
+        if self.dict_of_groups().get(group_name, False):
+            self.erase_group()
+        
         self.save_dataframe_with_names(df, group_name)
         file_name = self.dict_of_groups().get(group_name, False)
+        self.show_group_table(file_name, group_name)
+
+
+# -------------------- Утверждение --------------------
+
+
+    def approve_group_final(self):
+        # Булевый список строк
+        checkboxes = [self.check_table.cellWidget(row, 0) for row in range(self.check_table.rowCount())]
+        checked_rows = (checkbox.isChecked() for checkbox in checkboxes)
+        
+        sr = [row for row, flag in enumerate(checked_rows) if flag]
+        df = self.work_table.model().init_data
+        rows = df.iloc[sr, :]
+        ids = self.df_ntp.query('`Номер` == @rows["Номер"].to_list()').index.to_list()
+        # Сохраняем в основную таблицу 1
+        self.df_ntp.loc[self.df_ntp['Номер'].isin(ids), 'Участие'] += 1
+        self.settings_dict[self.cur_name]['df'] = self.df_ntp
+        # Сохраняем в work таблицу 1
+        df.loc[self.df_ntp['Номер'].isin(ids), 'Участие'] += 1
+        group_name = self.table_name_label.text()
+        self.erase_group()
+        self.save_dataframe_with_names(df, group_name)
+        file_name = self.dict_of_groups().get(group_name)
         self.show_group_table(file_name, group_name)

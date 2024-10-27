@@ -1,8 +1,5 @@
-from _base import Base_Class, pandasModel
-from _edit import Edit_Row
-
-import pandas as pd
-import re
+from utils._base import Base_Class, pandasModel
+from utils._edit import Edit_Row
 
 class Filter_table(Base_Class):
     
@@ -18,6 +15,10 @@ class Filter_table(Base_Class):
         # Заполнение CheckBox
         self.connect_on_off_filter(True)
         self.fill_filter_checkBox()
+        
+        self.filter_grnti_lineEdit.textChanged.connect(lambda x: Edit_Row.grnti_number_compliter(self, x, 'filter_grnti_lineEdit'))
+        self.filter_grnti2_lineEdit.textChanged.connect(lambda x: Edit_Row.grnti_number_compliter(self, x, 'filter_grnti2_lineEdit'))
+
         
     
     def fill_filter_checkBox(self, comdict: dict | None = None):
@@ -66,7 +67,8 @@ class Filter_table(Base_Class):
             self.filter_city_comboBox.currentText(),
             self.filter_grnti_lineEdit.text(),
             self.filter_grnti2_lineEdit.text(),
-            self.filter_keywords_lineEdit.text()
+            self.filter_keywords_lineEdit.text(),
+            # self.filter_takepart_comboBox.currentText()
         )
         cols = 'Регион', 'Округ', 'Город', 'ГРНТИ1', 'ГРНТИ2', 'Ключевые слова'
         filter_string: str = self.get_filter_str(filters, cols)

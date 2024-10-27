@@ -1,4 +1,4 @@
-from _base import Base_Class, pandasModel
+from utils._base import Base_Class, pandasModel
 
 from PyQt6.QtWidgets import QTableView
 from PyQt6.QtCore import QTimer
@@ -25,8 +25,23 @@ class Edit_Row(Base_Class):
         self.warning_editwidget_label.setHidden(True)
         # При изменении значения в checkBox
         self.connect_on_off_edit(True)
+        self.edit_grnti_lineEdit.textChanged.connect(lambda x: self.grnti_number_compliter(x, 'edit_grnti_lineEdit'))
+        self.edit_grnti2_lineEdit.textChanged.connect(lambda x: self.grnti_number_compliter(x, 'edit_grnti2_lineEdit'))
 
-    
+    def grnti_number_compliter(self, text: str, widget_: str):
+        # Удаляем пробелы и нецифровые символы
+        text = ''.join(c for c in text if c.isdigit())
+
+        # Добавляем точки после каждой второй цифры
+        parts = [text[i:i+2] for i in range(0, len(text), 2)]
+        formatted_text = '.'.join(parts)
+
+        # Ограничиваем максимальную длину
+        if len(formatted_text) > 8: # 6 цифр + 2 точки
+            formatted_text = formatted_text[:8] 
+
+        # Устанавливаем отформатированный текст в QLineEdit
+        getattr(self, widget_).setText(formatted_text)
     
     def show_edit_widget(self, hide: bool) -> None:
         if not hide and len(sr := self.rows_selected()) != 1:
@@ -179,7 +194,7 @@ class Edit_Row(Base_Class):
         old_row = self.init_table.model().init_data.iloc[sr[0], :]
         new_row = self.get_edit_row()
         
-        id = self.settings_dict[self.cur_name]['df'].query('`Номер` == @old_row["Номер"]').index.to_list()[0]
+        id = self.df_ntp.query('`Номер` == @old_row["Номер"]').index.to_list()[0]
         self.settings_dict[self.cur_name]['df'].iloc[id, :] = new_row
         self.init_table.model().init_data.iloc[sr[0], :] = new_row
         
@@ -229,7 +244,7 @@ class Edit_Row(Base_Class):
         flag = (
             bool(re.match(self.regex_grntis, row['ГРНТИ'])),
             not (~row.loc[['ФИО', 'Округ', 'Регион', 'Город', 'ГРНТИ']].astype(bool)).sum(),
-            self.settings_dict[self.cur_name]['df'].query(query_string).empty
+            self.df_ntp.query(query_string).empty
         )
         return flag
             

@@ -1,4 +1,4 @@
-from _base import Base_Class, pandasModel
+from utils._base import Base_Class, pandasModel
 
 class Table_Methods(Base_Class):
     

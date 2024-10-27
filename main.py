@@ -1,17 +1,20 @@
-import os, subprocess, sys
+import os, subprocess, sys, shutil
 for name in ('exit', 'Dialog_confirm', 'Dialog_comboBox', 'Dialog_lineEdit'):
     if not os.path.isfile(f'{name}.py'):
         match sys.platform:
             case 'darwin': subprocess.run(f'pyuic6 -o {name}.py -x {name}.ui'.split())
-            case _: subprocess.run(f'python -m PyQt6.uic.pyuic -o {name}.py -x {name}.ui'.split())       
+            case _: subprocess.run(f'python -m PyQt6.uic.pyuic -o {name}.py -x {name}.ui'.split())    
 
-from _add import Add_Row
-from _edit import Edit_Row
-from _base import Base_Class, Ui_Dialog_confirm, Ui_Dialog_lineEdit, Ui_Dialog_comboBox, Ui_plug
-from _table import Table_Methods
-from _filter import Filter_table
-from _delete import Delete_rows
-from _experts import Experts
+# Удаляяем папку с группами при запуске программы
+shutil.rmtree(os.path.join('.', 'groups'))
+
+from utils._add import Add_Row
+from utils._edit import Edit_Row
+from utils._base import Base_Class, Ui_Dialog_confirm, Ui_Dialog_lineEdit, Ui_Dialog_comboBox, Ui_plug
+from utils._table import Table_Methods
+from utils._filter import Filter_table
+from utils._delete import Delete_rows
+from utils._experts import Experts
 
 from PyQt6.QtWidgets import QApplication
 
@@ -19,32 +22,6 @@ import pandas as pd
 
 pd.set_option('future.no_silent_downcasting', True)
 
-# - контроль и восстановление целостности исходных баз данных системы;
-# Done
-# - добавление/редактирование информации об эксперте в базу данных, верификация вновь поступивших данных, обеспечение целостности данных;
-# Done
-# - контроль возможного повторного занесения данных об эксперте;
-# Done
-# - фильтрация информации в базе данных по указанной фамилии
-# и/или федеральному округу
-# и/или субъекту федерации
-# и/или городу
-# и/или рубрике
-# и/или коду ГРНТИ
-# и/или ключевым словам области интересов;
-# фиксация отобранного подмножества в поименованную экспертную группу;
-# Done
-# - просмотр записей выбранной группы кандидатов на включение в состав экспертной группы
-# с возможностью простановки/снятия отметок о принятии решения о включении кандидата в экспертную группу;
-# фиксация результата в экспертной группе;
-# Done
-# - просмотр записей исходной базы данных с возможностью простановки отметок об отборе эксперта в качестве кандидата на включение/добавление в экспертную группу,
-# перенос сведений об отобранных кандидатах в выбранную экспертную группу;
-# Done
-# - утверждение экспертной группы без возможности дальнейшей корректировки состава с увеличением на 1 числа участий в экспертизах в основной базе данных;
-
-# - формирование документов: таблица со списком сформированной поименованной экспертной группы,
-# содержащей столбцы: порядковый номер, фамилия И.О., регион, город, код ГРНТИ; карточка эксперта.
 
 class Ui_MainWindow2(Edit_Row, Add_Row, Table_Methods, Filter_table, Delete_rows, Experts):
 
@@ -85,7 +62,6 @@ class Ui_MainWindow2(Edit_Row, Add_Row, Table_Methods, Filter_table, Delete_rows
             'new_group' : self.before_group_widget,
             'choose_group' : lambda: True,
             'merge_group' : lambda: True,
-            # 'approve_group' : lambda: True,
             'delete_group' : self.before_delete_expert_part_widget,
             'delete_group_part' : self.before_delete_expert_widget
         }
@@ -94,8 +70,8 @@ class Ui_MainWindow2(Edit_Row, Add_Row, Table_Methods, Filter_table, Delete_rows
             'edit'  : Ui_plug,
             'delete': Ui_Dialog_confirm,
             'new_group' : Ui_Dialog_lineEdit,
+            'save_group' : Ui_Dialog_lineEdit,
             'merge_group' : Ui_Dialog_comboBox,
-            # 'approve_group' : Ui_Dialog_confirm,
             'choose_group' : Ui_Dialog_comboBox,
             'delete_group' : Ui_Dialog_confirm,
             'delete_group_part' : Ui_Dialog_confirm
@@ -105,14 +81,15 @@ class Ui_MainWindow2(Edit_Row, Add_Row, Table_Methods, Filter_table, Delete_rows
             'edit'  : self.apply_edit_widget,
             'delete': self.apply_delete_widget,
             'new_group' : self.save_group_widget,
+            'save_group' : self.save_group_widget,
             'merge_group' : self.merge_group_widget,
-            # 'approve_group' : self.approve_group_widget,
             'choose_group' : self.groups_show,
             'delete_group' : self.apply_delete_expert_widget,
             'delete_group_part' : self.apply_delete_expert_part_widget 
         }
         if not func_before[string]():
             return
+        if string == 'new_group': string = self.save_or_new_group()
         dialog = dialog_ui[string](string)
         result = dialog.exec()  # Запускаем диалоговое окно и ожидаем результата
         match result:
