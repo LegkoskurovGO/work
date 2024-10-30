@@ -107,10 +107,20 @@ class Experts(Base_Class):
         
         
     def before_group_widget(self):
-        if not self.stackedWidget.currentWidget() == self.page_1:
+        if self.stackedWidget.currentWidget() == self.page:
+            rows = self.work_table.model().init_data
+            if len(sr := self.rows_selected_expert()) > 1:
+                rows = rows.iloc[sr, :]
+            sr = sorted(rows['Номер'])
+            settings = QSettings("MyCompany", "MyApp")
+            settings.setValue("string_to_group", sr) # Сохраняем значение
             return True
-        else:
-            return len(Edit_Row.rows_selected(self)) > 0
+        elif self.stackedWidget.currentWidget() == self.page_1:
+            sr = Edit_Row.rows_selected(self)
+            sr = sorted(self.init_table.model().init_data.iloc[sr, :]['Номер'])
+            settings = QSettings("MyCompany", "MyApp")
+            settings.setValue("string_to_group", sr) # Сохраняем значение
+            return len(sr) > 0
     
     
     def dict_of_groups(self) -> dict:
@@ -134,7 +144,10 @@ class Experts(Base_Class):
             rows = self.init_table.model().init_data.iloc[sr, :]
         elif self.stackedWidget.currentWidget() == self.page:
             rows = self.work_table.model().init_data
-            self.erase_group()
+            if len(sr := self.rows_selected_expert()) > 1:
+                rows = rows.iloc[sr, :]
+            else:
+                self.erase_group()
         else:
             return
         self.save_dataframe_with_names(rows, group_name)

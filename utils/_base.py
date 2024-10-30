@@ -8,7 +8,7 @@ from PyQt6.QtWidgets import QMainWindow, QDialog, QTableView
 from PyQt6.QtCore import QAbstractTableModel, Qt, QSettings, QRegularExpression
 from PyQt6.QtGui import QShortcut, QKeySequence, QRegularExpressionValidator
 
-import os
+import os, shutil
 import pandas as pd
 from pandas.api.types import is_datetime64_any_dtype
 
@@ -111,6 +111,39 @@ class Ui_Dialog_lineEdit(QDialog, Ui_lineEdit):
         self.name_lineEdit.setStyleSheet(self.style_)
         self.accepted.connect(self.on_close)
         self.name_lineEdit.textChanged.connect(self.check_name)
+        
+        settings = QSettings("MyCompany", "MyApp")
+        sr = settings.value('string_to_group')
+        self.label_2.setText(self.insert_newline(self.combine_ranges(sr)))
+    def insert_newline(self, text: list[str], max_chars=100) -> str:
+        words = text  # Разбиваем строку на слова
+        result = []
+        current_line = []
+        current_length = 0
+        for word in words:
+            if current_length + len(word) + len(', ') <= max_chars:
+                current_line.append(word)
+                current_length += len(word) + len(', ')
+            else:
+                result.append(', '.join(current_line))
+                current_line = [word]
+                current_length = len(word) + len(', ')
+        if current_line:
+            result.append(', '.join(current_line))
+        return ',\n'.join(result)
+    def combine_ranges(self, numbers: list[int]):
+        ranges = []
+        start = numbers[0]
+        end = start
+        for i in range(1, len(numbers)):
+            if numbers[i] == end + 1:
+                end = numbers[i]
+            else:
+                ranges.append(str(start) if start == end else f"{start}-{end}")
+                start = numbers[i]
+                end = start
+        ranges.append(str(start) if start == end else f"{start}-{end}")
+        return ranges
     def on_close(self):
         # Читаем значения из объектов диалога
         settings = QSettings("MyCompany", "MyApp")
@@ -186,7 +219,8 @@ class Base_Class(QMainWindow, Ui_MainWindow):
         QMainWindow.__init__(self)
         self.ui = uic.loadUi('exit.ui', self) 
         # Загружаем все данные в формате pd.DataFrame
-        self.df_ntp, self.df_reg, self.df_grnti = self.load_data('data')
+        # self.df_ntp, self.df_reg, self.df_grnti = self.load_data('data')
+        self.df_ntp, self.df_reg, self.df_grnti = self.load_data2('data', 'temp_data')
         # Записываем переменные
         self.settings_dict = self.get_settings()
         self.cur_name: str = 'empty'
@@ -198,13 +232,26 @@ class Base_Class(QMainWindow, Ui_MainWindow):
         self.validator_name = QRegularExpressionValidator(QRegularExpression(r'^(?:[А-ЯЁа-яё\.\s]+)$'))
         self.validator_name_edit = QRegularExpressionValidator(QRegularExpression(r'^(?:[А-ЯЁа-яё\.\s]+)$'))
         self.validator_multi = QRegularExpressionValidator(QRegularExpression(r'^(?:[А-ЯЁа-яё\.\s\,]+)$'))
-        # Сохранение изменённых данных
-        # self.save_abc()
+        # Сохранение данные
+        self.save_abc(dir_name='temp_data', dfs=('df_ntp','df_reg','df_grnti'))
+        # При закрытии приложения
+        self.closeEvent = self.on_close_event
     
     
     def app_exit(self) -> None: 
-        # shutil.rmtree(os.path.realpath(os.path.join('.', 'groups')))
+        self.save_abc(dir_name='temp_data', dfs=('df_ntp','df_reg','df_grnti'))
         exit()
+    def on_close_event(self, event):
+        self.save_abc(dir_name='temp_data', dfs=('df_ntp','df_reg','df_grnti'))
+        event.accept()
+    def recover_data(self):
+        # Удаляяем папку temp_data 
+        if os.path.isdir(os.path.join('.', 'temp_data')):
+            shutil.rmtree(os.path.join('.', 'temp_data'))
+        self.df_ntp, self.df_reg, self.df_grnti = self.load_data('data')
+        # Отображение "Эксперты НТП"
+        self.settings_dict = self.get_settings()
+        self.show_table('ntp')
     def open_dialog(self, string):
         pass
         
@@ -220,42 +267,7 @@ class Base_Class(QMainWindow, Ui_MainWindow):
         self.ramka3.setHidden(btns)
         self.filterlist_name.setHidden(True)
             
-
-    def load_data(self, dir_name: str) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
-        if not os.path.isdir(os.path.join('.', dir_name)):
-            print(f'Нет папки {dir_name} с данными')
-            return
-        # Загружаем данные
-        params = {'dtype': { 'Номер': 'int16', 'Участие': 'int8'}, 'parse_dates': [7], 'date_format': '%d-%b-%y'}
         
-        df_ntp = pd.read_csv(os.path.join('.', dir_name, 'Expert.csv'), **params)
-        # df_reg = pd.read_csv(os.path.join('.', dir_name, 'Reg_obl_city.csv'), delimiter=';')
-        df_reg = pd.read_csv(os.path.join('.', dir_name, 'russian_cities.csv'), delimiter=';')
-        # df_grnti = pd.read_csv(os.path.join('.', dir_name, 'grntirub.csv'))
-        df_grnti = pd.read_csv(os.path.join('.', dir_name, 'grnti-latest.csv'), header=0, usecols=[0,1], names=['Код', 'Расшифровка']).drop_duplicates(keep='first')
-        
-        # Title case GRNTI
-        # df_grnti['Расшифровка'] = df_grnti['Расшифровка'].str.capitalize()
-        
-        # Расшифровка
-        dtypes_grnti = {'level_0_code': str, 'level_1_code': str, 'level_2_code': str, 'level_0_title': str, 'level_1_title': str, 'level_2_title': str}
-        df_grnti_all = pd.read_csv(os.path.join('.', dir_name, 'grnti-latest.csv'), dtype=dtypes_grnti)
-        dict1 = {k:v for k,v in zip(df_grnti_all.level_0_code.tolist(), df_grnti_all.level_0_title.tolist()) if k != ''}
-        dict2 = {k:v for k,v in zip(df_grnti_all.level_1_code.tolist(), df_grnti_all.level_1_title.tolist()) if k != ''}
-        dict3 = {k:v for k,v in zip(df_grnti_all.level_2_code.tolist(), df_grnti_all.level_2_title.tolist()) if k != ''}
-        self.dict_grnti = dict1 | dict2 | dict3
-        df_ntp['Расшифровка'] = df_ntp['ГРНТИ'].str.split(r', ').map(lambda num: ', '.join(dict.fromkeys([a for n in num if (a := self.dict_grnti.get(n, ''))])))
-        # Регион
-        # TODO: Кастыль
-        self.dict_reg = {k:v for k,v in zip(df_reg['Город'].tolist(), df_reg['Регион'].tolist())} 
-        df_ntp = pd.merge(df_ntp, df_reg.drop('Округ', axis=1), how='left', on='Город')
-        # Округ
-        df_ntp = pd.merge(df_ntp.drop('Округ', axis=1), df_reg.drop('Регион', axis=1), how='left', on='Город')
-        df_ntp = df_ntp[['Номер', 'ФИО', 'Округ', 'Регион', 'Город', 'ГРНТИ', 'Расшифровка', 'Ключевые слова', 'Участие', 'Дата добавления']]
-        
-        return df_ntp, df_reg, df_grnti
-    
-    
     def btn_connect(self) -> None:
         # Меню
         self.ntp_show.triggered.connect(lambda: self.show_table('ntp'))
@@ -265,6 +277,7 @@ class Base_Class(QMainWindow, Ui_MainWindow):
         self.save_group.triggered.connect(lambda: self.open_dialog('new_group'))
         self.delete_group.triggered.connect(lambda: self.open_dialog('delete_group'))
         self.hotkeys_show.triggered.connect(lambda: self.help_widget.setHidden(False))
+        self.recover.triggered.connect(self.recover_data)
         # Главные кнопки
         self.add_button.clicked.connect(lambda: self.show_add_widget(False))
         self.delete_button.clicked.connect(lambda: self.open_dialog('delete'))
@@ -309,7 +322,8 @@ class Base_Class(QMainWindow, Ui_MainWindow):
         # Удалить экспертов
         self.delete_button.setShortcut('backspace')
         self.filter_button.setShortcut('f')
-        # QShortcut(QKeySequence('Ctrl+q'), self).activated.connect(self.app_exit)
+        # Закрытие приложения
+        QShortcut(QKeySequence("Ctrl+Q"), self).activated.connect(self.app_exit)
     
     
     def layers(self) -> None:
@@ -347,7 +361,61 @@ class Base_Class(QMainWindow, Ui_MainWindow):
         }
 
 
-    # def save_abc(self):
-    #     self.df_ntp.to_csv('./data2/Expert.csv', index=False, encoding="utf-8", date_format='%d-%b-%y')
-    #     self.df_reg.to_csv('./data2/russian_cities.csv', index=False, encoding="utf-8", date_format='%d-%b-%y')
-    #     self.df_grnti.to_csv('./data2/grnti-latest.csv', index=False, encoding="utf-8", date_format='%d-%b-%y')
+    def save_abc(self, dir_name: str, dfs: tuple[str]):
+        if not os.path.isdir(os.path.join('.', dir_name)):
+            os.mkdir(os.path.join('.', dir_name))
+        
+        params_all = {'index': False, 'encoding': "utf-8", 'date_format': '%d-%b-%y', 'sep':';'}
+        for name in dfs:
+            getattr(self, f'{name}').to_csv(os.path.join('.', dir_name, f'{name}.csv'), **params_all)
+    
+    
+    def load_data(self, dir_name: str) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
+        if not os.path.isdir(os.path.join('.', dir_name)):
+            print(f'Нет папки {dir_name} с данными')
+            return
+        # Загружаем данные
+        params = {'dtype': { 'Номер': 'int16', 'Участие': 'int8'}, 'parse_dates': [7], 'date_format': '%d-%b-%y'}
+        
+        df_ntp = pd.read_csv(os.path.join('.', dir_name, 'Expert.csv'), **params)
+        # df_reg = pd.read_csv(os.path.join('.', dir_name, 'Reg_obl_city.csv'), delimiter=';')
+        df_reg = pd.read_csv(os.path.join('.', dir_name, 'russian_cities.csv'), delimiter=';')
+        # df_grnti = pd.read_csv(os.path.join('.', dir_name, 'grntirub.csv'))
+        df_grnti = pd.read_csv(os.path.join('.', dir_name, 'grnti-latest.csv'), header=0, usecols=[0,1], names=['Код', 'Расшифровка']).drop_duplicates(keep='first')
+        
+        # Title case GRNTI
+        # df_grnti['Расшифровка'] = df_grnti['Расшифровка'].str.capitalize()
+        
+        # Расшифровка
+        dtypes_grnti = {'level_0_code': str, 'level_1_code': str, 'level_2_code': str, 'level_0_title': str, 'level_1_title': str, 'level_2_title': str}
+        df_grnti_all = pd.read_csv(os.path.join('.', dir_name, 'grnti-latest.csv'), dtype=dtypes_grnti)
+        dict1 = {k:v for k,v in zip(df_grnti_all.level_0_code.tolist(), df_grnti_all.level_0_title.tolist()) if k != ''}
+        dict2 = {k:v for k,v in zip(df_grnti_all.level_1_code.tolist(), df_grnti_all.level_1_title.tolist()) if k != ''}
+        dict3 = {k:v for k,v in zip(df_grnti_all.level_2_code.tolist(), df_grnti_all.level_2_title.tolist()) if k != ''}
+        self.dict_grnti = dict1 | dict2 | dict3
+        df_ntp['Расшифровка'] = df_ntp['ГРНТИ'].str.split(r', ').map(lambda num: ', '.join(dict.fromkeys([a for n in num if (a := self.dict_grnti.get(n, ''))])))
+        # Регион
+        # TODO: Кастыль
+        self.dict_reg = {k:v for k,v in zip(df_reg['Город'].tolist(), df_reg['Регион'].tolist())} 
+        df_ntp = pd.merge(df_ntp, df_reg.drop('Округ', axis=1), how='left', on='Город')
+        # Округ
+        df_ntp = pd.merge(df_ntp.drop('Округ', axis=1), df_reg.drop('Регион', axis=1), how='left', on='Город')
+        df_ntp = df_ntp[['Номер', 'ФИО', 'Округ', 'Регион', 'Город', 'ГРНТИ', 'Расшифровка', 'Ключевые слова', 'Участие', 'Дата добавления']]
+        
+        return df_ntp, df_reg, df_grnti
+
+
+    def load_data2(self, dir_name: str, dir_name2: str) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
+        if not os.path.isdir(os.path.join('.', dir_name2)):
+            print(f'Нет папки {dir_name2} с данными')
+            print(f'Попытка загрузить данные из папки {dir_name}')
+            return self.load_data(dir_name)
+        # Загружаем данные
+        params_ntp = {'dtype': { 'Номер': 'int16', 'Участие': 'int8'}, 'parse_dates': [9]}
+        params_all = {'encoding': "utf-8", 'date_format': '%d-%b-%y', 'delimiter': ';'}
+        
+        df_ntp = pd.read_csv(os.path.join('.', dir_name2, 'df_ntp.csv'), **params_ntp, **params_all)
+        df_reg = pd.read_csv(os.path.join('.', dir_name2, 'df_reg.csv'), **params_all)
+        df_grnti = pd.read_csv(os.path.join('.', dir_name2, 'df_grnti.csv'), **params_all)
+        
+        return df_ntp, df_reg, df_grnti

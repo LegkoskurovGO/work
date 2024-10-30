@@ -2,6 +2,7 @@
 __pycache__
 venv
 groups
+temp_data
 *.ui
 Dialog*.py
 exit*.py

@@ -12,6 +12,7 @@ class Delete_rows(Base_Class):
         if not self.stackedWidget.currentWidget() == self.page_1:
             return False
         if len(sr := Edit_Row.rows_selected(self)) > 0:
+            sr = sorted(self.init_table.model().init_data.iloc[sr, :]['Номер'])
             self.warning_delete_label.setHidden(True)
             settings = QSettings("MyCompany", "MyApp")
             settings.setValue("string_to_delete", sr) # Сохраняем значение
