@@ -1,13 +1,9 @@
-import os, subprocess, sys, shutil
+import os, subprocess, sys
 for name in ('exit', 'Dialog_confirm', 'Dialog_comboBox', 'Dialog_lineEdit'):
     if not os.path.isfile(f'{name}.py'):
         match sys.platform:
             case 'darwin': subprocess.run(f'pyuic6 -o {name}.py -x {name}.ui'.split())
             case _: subprocess.run(f'python -m PyQt6.uic.pyuic -o {name}.py -x {name}.ui'.split())    
-
-# Удаляяем папку с группами при запуске программы
-if os.path.isdir(os.path.join('.', 'groups')):
-    shutil.rmtree(os.path.join('.', 'groups'))
 
 from utils._add import Add_Row
 from utils._edit import Edit_Row

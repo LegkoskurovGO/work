@@ -2,7 +2,7 @@ from utils._base import Base_Class, pandasModel
 from utils._edit import Edit_Row
 
 from PyQt6.QtCore import QSettings
-from PyQt6.QtWidgets import QTableView
+from PyQt6.QtWidgets import QTableView, QFileDialog
 from PyQt6 import QtWidgets, QtCore
 
 import os
@@ -323,3 +323,26 @@ class Experts(Base_Class):
         self.save_dataframe_with_names(df, group_name)
         file_name = self.dict_of_groups().get(group_name)
         self.show_group_table(file_name, group_name)
+        
+    
+# -------------------- Импорт в Excel --------------------    
+    
+    
+    def save_to_excel(self):
+        """Сохраняет DataFrame в Excel."""
+        # Получаем путь к файлу с помощью диалогового окна
+        file_path, _ = QFileDialog.getSaveFileName(
+            self,
+            "Сохранить файл Excel",
+            "",
+            "Файлы Excel (*.xlsx)"
+        )
+        # Если пользователь выбрал файл
+        if file_path:
+            # Сохраняем DataFrame в файл
+            try:
+                columns = ['Номер', 'ФИО', 'Округ', 'Город', 'ГРНТИ', 'Ключевые слова']
+                self.work_table.model().init_data[columns].to_excel(file_path, index=False) # index=False - скрывает индекс
+                print(f"Таблица сохранена в '{file_path}'")
+            except Exception as e:
+                print(f"Ошибка при сохранении: {e}")

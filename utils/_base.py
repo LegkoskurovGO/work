@@ -8,7 +8,7 @@ from PyQt6.QtWidgets import QMainWindow, QDialog, QTableView
 from PyQt6.QtCore import QAbstractTableModel, Qt, QSettings, QRegularExpression
 from PyQt6.QtGui import QShortcut, QKeySequence, QRegularExpressionValidator
 
-import os, shutil
+import os, shutil, json
 import pandas as pd
 from pandas.api.types import is_datetime64_any_dtype
 
@@ -247,7 +247,10 @@ class Base_Class(QMainWindow, Ui_MainWindow):
     def recover_data(self):
         # Удаляяем папку temp_data 
         if os.path.isdir(os.path.join('.', 'temp_data')):
-            shutil.rmtree(os.path.join('.', 'temp_data'))
+            shutil.rmtree(os.path.join('.', 'temp_data')) 
+        # Удаляяем папку с группами
+        if os.path.isdir(os.path.join('.', 'groups')):
+            shutil.rmtree(os.path.join('.', 'groups'))
         self.df_ntp, self.df_reg, self.df_grnti = self.load_data('data')
         # Отображение "Эксперты НТП"
         self.settings_dict = self.get_settings()
@@ -304,6 +307,7 @@ class Base_Class(QMainWindow, Ui_MainWindow):
         self.edit_group_button.clicked.connect(lambda: self.open_dialog('delete_group_part'))
         self.approve_group_button.clicked.connect(self.approve_group_final)
         self.add_group_button.clicked.connect(lambda: self.open_dialog('merge_group'))
+        self.importExcel_group_button.clicked.connect(self.save_to_excel)
         
     
     
@@ -394,6 +398,12 @@ class Base_Class(QMainWindow, Ui_MainWindow):
         dict3 = {k:v for k,v in zip(df_grnti_all.level_2_code.tolist(), df_grnti_all.level_2_title.tolist()) if k != ''}
         self.dict_grnti = dict1 | dict2 | dict3
         df_ntp['Расшифровка'] = df_ntp['ГРНТИ'].str.split(r', ').map(lambda num: ', '.join(dict.fromkeys([a for n in num if (a := self.dict_grnti.get(n, ''))])))
+        
+        if not os.path.isfile(os.path.join('.', 'data', 'dict_grnti.json')):
+            # Сохранение словаря в файл
+            with open(os.path.join('.', 'data', 'dict_grnti.json'), 'w') as f:
+                json.dump(self.dict_grnti, f)
+        
         # Регион
         # TODO: Кастыль
         self.dict_reg = {k:v for k,v in zip(df_reg['Город'].tolist(), df_reg['Регион'].tolist())} 
@@ -417,5 +427,9 @@ class Base_Class(QMainWindow, Ui_MainWindow):
         df_ntp = pd.read_csv(os.path.join('.', dir_name2, 'df_ntp.csv'), **params_ntp, **params_all)
         df_reg = pd.read_csv(os.path.join('.', dir_name2, 'df_reg.csv'), **params_all)
         df_grnti = pd.read_csv(os.path.join('.', dir_name2, 'df_grnti.csv'), **params_all)
+        
+        # Чтение словаря из файла
+        with open(os.path.join('.', 'data', 'dict_grnti.json'), 'r') as f:
+            self.dict_grnti = json.load(f)
         
         return df_ntp, df_reg, df_grnti
