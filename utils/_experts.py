@@ -312,7 +312,7 @@ class Experts(Base_Class):
         sr = [row for row, flag in enumerate(checked_rows) if flag]
         df = self.work_table.model().init_data
         rows = df.iloc[sr, :]
-        ids = self.df_ntp.query('`Номер` == @rows["Номер"].to_list()').index.to_list()
+        ids = rows["Номер"].to_list()
         # Сохраняем в основную таблицу 1
         self.df_ntp.loc[self.df_ntp['Номер'].isin(ids), 'Участие'] += 1
         self.settings_dict[self.cur_name]['df'] = self.df_ntp
