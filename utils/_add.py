@@ -179,14 +179,15 @@ class Add_Row(Base_Class):
         return True
 
 
-    def reset_style_addexpert(self) -> None:            
-        self.addexpert_name_lineEdit.setStyleSheet("background-color: rgb(228,238,255);")
-        self.addexpert_reg_comboBox.setStyleSheet("background-color: rgb(228,238,255);")
-        self.addexpert_region_comboBox.setStyleSheet("background-color: rgb(228,238,255);")
-        self.addexpert_city_comboBox.setStyleSheet("background-color: rgb(228,238,255);")
-        self.addexpert_grnti_lineEdit.setStyleSheet("background-color: rgb(228,238,255);")
-        self.addexpert_grnti2_lineEdit.setStyleSheet("background-color: rgb(228,238,255);")
-        self.addexpert_keywords_lineEdit.setStyleSheet("background-color: rgb(228,238,255);")    
+    def reset_style_addexpert(self) -> None:       
+        a = 'background-color: rgb(228,238,255);font: 12pt "Bahnschrift";'     
+        self.addexpert_name_lineEdit.setStyleSheet(a)
+        self.addexpert_reg_comboBox.setStyleSheet(a)
+        self.addexpert_region_comboBox.setStyleSheet(a)
+        self.addexpert_city_comboBox.setStyleSheet(a)
+        self.addexpert_grnti_lineEdit.setStyleSheet(a)
+        self.addexpert_grnti2_lineEdit.setStyleSheet(a)
+        self.addexpert_keywords_lineEdit.setStyleSheet(a) 
         
         
     def reset_add_widget(self) -> None:

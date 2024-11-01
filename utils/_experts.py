@@ -17,6 +17,12 @@ class Experts(Base_Class):
         self.flag_sort: bool = True
         self.col_sort: int = 0
         self.work_table.horizontalHeader().sectionClicked.connect(self.sort_table_expert)
+        self.check_table.setColumnCount(1)
+        self.check_table.verticalHeader().setVisible(False)
+        self.check_table.setHorizontalHeaderLabels(['Включить'])
+        self.check_table.setGeometry(QtCore.QRect(1095, 80, 82, 620))
+        self.check_table.setSelectionMode(QTableView.SelectionMode.NoSelection)
+        self.check_table.horizontalHeader().sectionClicked.connect(self.on_header_clicked)
     
     # -------------------- Загрузка --------------------
     
@@ -58,10 +64,7 @@ class Experts(Base_Class):
     
     def setup_check_table(self, work_df: pd.DataFrame):
         rows, cols = work_df.shape
-        self.check_table.setColumnCount(1)
         self.check_table.setRowCount(rows)
-        self.check_table.verticalHeader().setVisible(False)
-        self.check_table.setHorizontalHeaderLabels(['Включить'])
         for row in range(rows):
             # item = QtWidgets.QTableWidgetItem()
             # checkbox = QtWidgets.QCheckBox()
@@ -73,11 +76,8 @@ class Experts(Base_Class):
             checkbox = QtWidgets.QCheckBox()
             checkbox.setStyleSheet("QCheckBox::indicator{width:59px;height:30px;}") 
             self.check_table.setCellWidget(row, 0, checkbox)
-            self.check_table.setContentsMargins(0,0,0,0)
+        self.check_table.setContentsMargins(0,0,0,0)
         self.check_table.resizeColumnsToContents()
-        self.check_table.setGeometry(QtCore.QRect(1095, 80, 82, 620))
-        self.check_table.setSelectionMode(QTableView.SelectionMode.NoSelection)
-        self.check_table.horizontalHeader().sectionClicked.connect(self.on_header_clicked)
         # self.check_table.setSelectionBehavior(QTableView.SelectionBehavior.SelectRows)
         
     def on_header_clicked(self, *args):
@@ -86,8 +86,10 @@ class Experts(Base_Class):
         checkboxes = [self.check_table.cellWidget(row, 0) for row in range(self.check_table.rowCount())]
         # Проверяем, проставлен ли флажок на всех QCheckBox
         all_checked = all(checkbox.isChecked() for checkbox in checkboxes)
+        print(all_checked)
         # Если все флажки проставлены, то снимаем их, иначе проставляем
-        for checkbox in checkboxes: checkbox.setChecked(not all_checked)
+        for checkbox in checkboxes: 
+            checkbox.setChecked(not all_checked)
     
     def sync_scroll(self, value):
         self.check_table.verticalScrollBar().setValue(value)
@@ -226,6 +228,8 @@ class Experts(Base_Class):
         if not self.stackedWidget.currentWidget() == self.page:
             return False
         else: 
+            settings = QSettings("MyCompany", "MyApp")
+            settings.setValue("string_to_delete", []) # Сохраняем значение
             return True
     
     
