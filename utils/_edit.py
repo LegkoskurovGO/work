@@ -27,6 +27,8 @@ class Edit_Row(Base_Class):
         self.connect_on_off_edit(True)
         self.edit_grnti_lineEdit.textChanged.connect(lambda x: self.grnti_number_compliter(x, 'edit_grnti_lineEdit'))
         self.edit_grnti2_lineEdit.textChanged.connect(lambda x: self.grnti_number_compliter(x, 'edit_grnti2_lineEdit'))
+        a = 'background-color: rgb(228,238,255);font: 12pt "Bahnschrift";font-weight: 250;'
+        self.edit_city_comboBox.setStyleSheet(a)
 
     def grnti_number_compliter(self, text: str, widget_: str):
         # Удаляем пробелы и нецифровые символы

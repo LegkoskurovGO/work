@@ -78,6 +78,7 @@ class Ui_Dialog_confirm(QDialog, Ui_Confirm):
             result.append(', '.join(current_line))
         return ',\n'.join(result)
     def combine_ranges(self, numbers: list[int]):
+        #numbers = list(map(int, numbers))    //////////
         ranges = []
         start = numbers[0]
         end = start
@@ -132,6 +133,8 @@ class Ui_Dialog_lineEdit(QDialog, Ui_lineEdit):
             result.append(', '.join(current_line))
         return ',\n'.join(result)
     def combine_ranges(self, numbers: list[int]):
+        #print(numbers)                                   //////////////////////
+        #numbers = list(map(int, numbers))
         ranges = []
         start = numbers[0]
         end = start
@@ -161,7 +164,8 @@ class Ui_Dialog_lineEdit(QDialog, Ui_lineEdit):
             self.confirm_button.clicked.connect(self.accept)
             self.name_lineEdit.setStyleSheet(self.style_)
             self.flag = True
-        elif self.flag and not self.flag_new:
+            # Ниже было другое словие
+        #elif (self.flag and not self.flag_new) or (self.name_lineEdit.text() == ''): //////
             self.confirm_button.clicked.disconnect()
             self.name_lineEdit.setStyleSheet(self.style_ + 'border: 1px solid red;') 
             self.flag = False
@@ -194,6 +198,8 @@ class Ui_Dialog_comboBox(QDialog, Ui_comboBox):
                 name_group_list = [','.join(line.split(',')[1:]).strip() for line in f]
         return name_group_list
     def show_picked_group(self, group_name: str):
+        #if self.choose_comboBox.currentText() == '':         /////////////////
+        #    return
         file_path = os.path.join('.', 'groups', 'names.txt')
         if os.path.exists(file_path):
             with open(file_path, "r", encoding="utf-8") as f:

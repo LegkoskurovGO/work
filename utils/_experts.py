@@ -113,13 +113,14 @@ class Experts(Base_Class):
             rows = self.work_table.model().init_data
             if len(sr := self.rows_selected_expert()) > 1:
                 rows = rows.iloc[sr, :]
-            sr = sorted(rows['Номер'])
+            #sr = sorted(map(int, rows['Номер']))         ///////////////
+            #print(sr)
             settings = QSettings("MyCompany", "MyApp")
             settings.setValue("string_to_group", sr) # Сохраняем значение
             return True
         elif self.stackedWidget.currentWidget() == self.page_1:
             sr = Edit_Row.rows_selected(self)
-            sr = sorted(self.init_table.model().init_data.iloc[sr, :]['Номер'])
+            #sr = sorted(map(int, self.init_table.model().init_data.iloc[sr, :]['Номер']))  //////
             settings = QSettings("MyCompany", "MyApp")
             settings.setValue("string_to_group", sr) # Сохраняем значение
             return len(sr) > 0
