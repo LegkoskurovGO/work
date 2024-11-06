@@ -322,7 +322,7 @@ class Experts(Base_Class):
         self.df_ntp.loc[self.df_ntp['Номер'].isin(ids), 'Участие'] += 1
         self.settings_dict[self.cur_name]['df'] = self.df_ntp
         # Сохраняем в work таблицу 1
-        df.loc[self.df_ntp['Номер'].isin(ids), 'Участие'] += 1
+        df.loc[sr, 'Участие'] += 1
         group_name = self.table_name_label.text()
         self.erase_group()
         self.save_dataframe_with_names(df, group_name)

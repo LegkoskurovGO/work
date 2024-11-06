@@ -107,7 +107,7 @@ class Filter_table(Base_Class):
                     if len(filter_string) > 1: filter_string += ' and '
                     filter_ = filter_.split(',')
                     for n, i in enumerate(filter_):
-                        filter_string += f'`{col_.strip()}`.str.contains(r"{i}", na=False, case=True, regex=True)'
+                        filter_string += f'`{col_.strip()}`.str.contains(r"{i}", na=False, case=False, regex=True)'
                         if len(filter_) - (n + 1): filter_string += ' or '
                 case 'ГРНТИ1':
                     if len(filter_string) > 1: filter_string += ' and '
