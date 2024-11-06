@@ -1,1 +1,0 @@
-pyuic6 -o exit.py exit.ui
