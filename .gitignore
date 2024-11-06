@@ -8,3 +8,4 @@ Dialog*.py
 exit*.py
 file*.py
 dict_grnti.json
+.idea
