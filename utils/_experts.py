@@ -86,7 +86,6 @@ class Experts(Base_Class):
         checkboxes = [self.check_table.cellWidget(row, 0) for row in range(self.check_table.rowCount())]
         # Проверяем, проставлен ли флажок на всех QCheckBox
         all_checked = all(checkbox.isChecked() for checkbox in checkboxes)
-        print(all_checked)
         # Если все флажки проставлены, то снимаем их, иначе проставляем
         for checkbox in checkboxes: 
             checkbox.setChecked(not all_checked)
@@ -113,14 +112,13 @@ class Experts(Base_Class):
             rows = self.work_table.model().init_data
             if len(sr := self.rows_selected_expert()) > 1:
                 rows = rows.iloc[sr, :]
-            #sr = sorted(map(int, rows['Номер']))         ///////////////
-            #print(sr)
             settings = QSettings("MyCompany", "MyApp")
             settings.setValue("string_to_group", sr) # Сохраняем значение
             return True
         elif self.stackedWidget.currentWidget() == self.page_1:
             sr = Edit_Row.rows_selected(self)
-            #sr = sorted(map(int, self.init_table.model().init_data.iloc[sr, :]['Номер']))  //////
+            sr = self.init_table.model().init_data.iloc[sr, :]['Номер']
+            sr = sorted(map(int, sr))
             settings = QSettings("MyCompany", "MyApp")
             settings.setValue("string_to_group", sr) # Сохраняем значение
             return len(sr) > 0
@@ -329,7 +327,7 @@ class Experts(Base_Class):
         file_name = self.dict_of_groups().get(group_name)
         self.show_group_table(file_name, group_name)
         
-    
+        
 # -------------------- Импорт в Excel --------------------    
     
     
@@ -346,8 +344,40 @@ class Experts(Base_Class):
         if file_path:
             # Сохраняем DataFrame в файл
             try:
-                columns = ['Номер', 'ФИО', 'Округ', 'Город', 'ГРНТИ', 'Ключевые слова']
-                self.work_table.model().init_data[columns].to_excel(file_path, index=False) # index=False - скрывает индекс
+                df: pd.DataFrame = self.work_table.model().init_data
+                # df['Дата добавления'] = df['Дата добавления'].dt.strftime('%d-%b-%y')
+                df = df.fillna('')
+                group_name: str = self.table_name_label.text()
+                columns = ['Номер', 'ФИО', 'Округ', 'Город', 'ГРНТИ', 'Карточка эксперта']
+                df[columns[-1]] = 'Уникальный номер эксперта: ' + df['Номер'].astype(str) + '\n' + \
+                    'ФИО : ' + df['ФИО'] + '\n' + \
+                    'Округ: ' + df['Округ'] + '\n' + \
+                    'Город: ' + df['Город'] + '\n' + \
+                    'Ключевые слова: ' + df['Ключевые слова'] + '\n' + \
+                    'Дата добавления в БД: ' + df['Дата добавления'].astype(str) + '\n' + \
+                    'Сферы: ' + df['Расшифровка']
+                # Формируем карточку эксперта для каждой строки
+                df = df[columns]
+                # Создаем файл Excel
+                with pd.ExcelWriter(file_path, engine='xlsxwriter') as writer:
+                # with pd.ExcelWriter(file_path, engine='openpyxl') as writer:
+                    # Пишем имя группы на первой строке
+                    pd.DataFrame([['Группа:', group_name]]).to_excel(writer, header=False, index=False, startrow=0)
+                    # Пишем данные таблицы
+                    df.to_excel(writer, header=True, index=False, startrow=2)
+                    # Автоматическое выравнивание по левому краю
+                    workbook = writer.book
+                    worksheet = writer.sheets['Sheet1']
+                    for col_num, _ in enumerate(df.columns):
+                        worksheet.set_column(col_num, col_num, None, None, {'align': 'left'})
+                    # Автоматическая подгонка ширины столбцов
+                    worksheet.autofit()
+                    # Высота строки
+                    text_wrap_format = workbook.add_format({'text_wrap': True})
+                    max_line_breaks = df['Карточка эксперта'].str.count('\n').max() + 1
+                    for i, _ in df.iterrows():
+                        worksheet.set_row(i+2+1, 15 * max_line_breaks, text_wrap_format)
+                  
                 print(f"Таблица сохранена в '{file_path}'")
             except Exception as e:
                 print(f"Ошибка при сохранении: {e}")

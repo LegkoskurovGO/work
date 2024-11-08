@@ -61,7 +61,7 @@ class Ui_Dialog_confirm(QDialog, Ui_Confirm):
         settings = QSettings("MyCompany", "MyApp")
         sr = settings.value('string_to_delete')
         self.label_2.setText(self.insert_newline(self.combine_ranges(sr)))
-    def insert_newline(self, text: list[str], max_chars=100) -> str:
+    def insert_newline(self, text: list[str], max_chars=90) -> str:
         words = text  # Разбиваем строку на слова
         result = []
         current_line = []
@@ -76,6 +76,8 @@ class Ui_Dialog_confirm(QDialog, Ui_Confirm):
                 current_length = len(word) + len(', ')
         if current_line:
             result.append(', '.join(current_line))
+        if len(result) > 8:
+            result = result[:8] + ['...']
         return ',\n'.join(result)
     def combine_ranges(self, numbers: list[int]):
         numbers = list(map(int, numbers))
@@ -110,13 +112,16 @@ class Ui_Dialog_lineEdit(QDialog, Ui_lineEdit):
         self.flag = True
         self.style_ = """background-color: rgb(228, 238, 255);font: 12pt "Bahnschrift";border-color: rgb(67, 78, 91);"""
         self.name_lineEdit.setStyleSheet(self.style_)
+        
         self.accepted.connect(self.on_close)
         self.name_lineEdit.textChanged.connect(self.check_name)
+        
+        self.check_name(group_name=None)
         
         settings = QSettings("MyCompany", "MyApp")
         sr = settings.value('string_to_group')
         self.label_2.setText(self.insert_newline(self.combine_ranges(sr)))
-    def insert_newline(self, text: list[str], max_chars=100) -> str:
+    def insert_newline(self, text: list[str], max_chars=90) -> str:
         words = text  # Разбиваем строку на слова
         result = []
         current_line = []
@@ -131,6 +136,8 @@ class Ui_Dialog_lineEdit(QDialog, Ui_lineEdit):
                 current_length = len(word) + len(', ')
         if current_line:
             result.append(', '.join(current_line))
+        if len(result) > 8:
+            result = result[:8] + ['...']
         return ',\n'.join(result)
     def combine_ranges(self, numbers: list[int]):
         numbers = list(map(int, numbers))
@@ -151,6 +158,12 @@ class Ui_Dialog_lineEdit(QDialog, Ui_lineEdit):
         settings = QSettings("MyCompany", "MyApp")
         settings.setValue("name_lineEdit", self.name_lineEdit.text()) # Сохраняем значение
     def check_name(self, group_name):
+        # Инициализация
+        if group_name is None:
+            self.confirm_button.clicked.disconnect()
+            self.name_lineEdit.setStyleSheet(self.style_) 
+            self.flag = False
+            return
         # Определение наличие дубликатов
         self.flag_new = True 
         file_path = os.path.join('.', 'groups', 'names.txt')
@@ -194,9 +207,13 @@ class Ui_Dialog_comboBox(QDialog, Ui_comboBox):
         if os.path.exists(file_path):
             with open(file_path, "r", encoding="utf-8") as f:
                 name_group_list = [','.join(line.split(',')[1:]).strip() for line in f]
+        # # Исключить из списка уже отображаемую группу
+        # if self.stackedWidget.currentWidget() == self.page:
+        #     name_group_list.remove(self.choose_comboBox.currentText())
         return name_group_list
     def show_picked_group(self, group_name: str):
         if self.choose_comboBox.currentText() == '':
+            self.init_table.setModel(pandasModel(pd.DataFrame()))
             return
         file_path = os.path.join('.', 'groups', 'names.txt')
         if os.path.exists(file_path):
